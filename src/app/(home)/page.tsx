@@ -7,11 +7,13 @@ import { CustomCursor } from "@/components/home/custom-cursor"
 export default function Home() {
   return (
     <main className="min-h-screen bg-background">
-     <CustomCursor>
+     <CustomCursor  scrollToId="reservar">
        <Header />
       <HeroSection />
      </CustomCursor>
-      <ProductsSection />
+        <div id="reservar">
+        <ProductsSection />
+      </div>
       <FeaturedSection />
       
     </main>

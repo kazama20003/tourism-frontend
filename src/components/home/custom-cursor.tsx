@@ -5,9 +5,10 @@ import gsap from "gsap";
 
 interface CustomCursorProps {
   children: React.ReactNode;
+  scrollToId?: string;
 }
 
-export function CustomCursor({ children }: CustomCursorProps) {
+export function CustomCursor({ children, scrollToId = "reservar" }: CustomCursorProps) {
   const [isHovering, setIsHovering] = useState(false);
   const cursorRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -26,7 +27,6 @@ export function CustomCursor({ children }: CustomCursorProps) {
       animationFrameId = requestAnimationFrame(() => {
         const rect = wrapper.getBoundingClientRect();
 
-        // solo mover si está dentro del wrapper
         if (
           e.clientX >= rect.left &&
           e.clientX <= rect.right &&
@@ -34,8 +34,8 @@ export function CustomCursor({ children }: CustomCursorProps) {
           e.clientY <= rect.bottom
         ) {
           gsap.to(cursor, {
-            x: e.clientX - 16,
-            y: e.clientY - 16,
+            x: e.clientX - 32,
+            y: e.clientY - 32,
             duration: 0.35,
             ease: "power2.out",
             overwrite: "auto",
@@ -59,7 +59,6 @@ export function CustomCursor({ children }: CustomCursorProps) {
     };
   }, []);
 
-  // scale + opacity del texto
   useEffect(() => {
     if (!cursorRef.current || !textRef.current) return;
 
@@ -76,17 +75,28 @@ export function CustomCursor({ children }: CustomCursorProps) {
     });
   }, [isHovering]);
 
+  const handleCursorClick = () => {
+    const element = document.getElementById(scrollToId);
+    console.log("[v0] Buscando elemento con id:", scrollToId);
+    console.log("[v0] Elemento encontrado:", element);
+    if (element) {
+      console.log("[v0] Scrolleando a:", scrollToId);
+      element.scrollIntoView({ behavior: "smooth" });
+    } else {
+      console.log("[v0] No se encontró elemento con id:", scrollToId);
+    }
+  };
+
   return (
     <div
       ref={wrapperRef}
       className="relative hide-system-cursor"
-      style={{ cursor: "none" }}
+      onClick={handleCursorClick}
     >
-      {/* cursor visual */}
       <div
         ref={cursorRef}
         className="
-          fixed top-0 left-0 w-8 h-8 rounded-full
+          fixed top-0 left-0 w-16 h-16 rounded-full
           pointer-events-none z-[9999]
           mix-blend-difference flex items-center justify-center
         "
@@ -94,16 +104,15 @@ export function CustomCursor({ children }: CustomCursorProps) {
       >
         <div
           ref={textRef}
-          className="absolute text-black text-xs font-bold"
+          className="absolute text-black text-xs font-bold whitespace-nowrap"
           style={{ opacity: 0 }}
         >
-          PLAY
+          RESERVAR
         </div>
 
         <div className="w-full h-full bg-white rounded-full" />
       </div>
 
-      {/* contenido */}
       {children}
     </div>
   );
