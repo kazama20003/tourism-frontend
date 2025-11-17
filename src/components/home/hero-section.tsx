@@ -93,7 +93,10 @@ export function HeroSection() {
 
           {/* AUDIO BUTTON */}
           <button
-            onClick={toggleAudio}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleAudio();
+            }}
             className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 transition-all flex items-center justify-center text-white backdrop-blur-sm"
             aria-label="Toggle audio"
           >
@@ -110,10 +113,16 @@ export function HeroSection() {
 
           {/* BUTTONS */}
           <div className="flex gap-6 items-center">
-            <button className="px-8 py-3 bg-black text-white font-semibold rounded-full hover:bg-black/80 transition-all">
+            <button 
+              onClick={(e) => e.stopPropagation()}
+              className="px-8 py-3 bg-black text-white font-semibold rounded-full hover:bg-black/80 transition-all"
+            >
               PLAN YOUR VISIT
             </button>
-            <button className="px-8 py-3 bg-transparent text-white font-semibold rounded-full hover:bg-white/10 transition-all">
+            <button 
+              onClick={(e) => e.stopPropagation()}
+              className="px-8 py-3 bg-transparent text-white font-semibold rounded-full hover:bg-white/10 transition-all"
+            >
               SHOP NOW
             </button>
           </div>

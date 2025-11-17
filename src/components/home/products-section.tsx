@@ -70,11 +70,29 @@ export default function ProductsSection() {
       video: "https://res.cloudinary.com/ddbzpbrje/video/upload/v1763011237/11929213_1920_1080_60fps_lq178j.mp4",
       type: "video",
     },
+    {
+      id: 3,
+      title: "Rosado Delicado",
+      description:
+        "Vino rosado con aromas florales y notas frutales suaves, ideal para acompañar comidas ligeras y conversaciones gratas.",
+      price: "$55",
+      image: "https://res.cloudinary.com/ddbzpbrje/image/upload/v1760740330/samples/food/pot-mussels.jpg",
+      type: "image",
+    },
+    {
+      id: 4,
+      title: "Tinto Vintage",
+      description:
+        "Vino tinto excepcional con 25 años de envejecimiento, aromas complejos y sabor profundo que evoluciona en el paladar.",
+      price: "$120",
+      video: "https://res.cloudinary.com/ddbzpbrje/video/upload/v1763011237/11929213_1920_1080_60fps_lq178j.mp4",
+      type: "video",
+    },
   ]
 
   return (
-    <section className="w-full bg-white border-l-16 border-r-16 border-white">
-      <div ref={dividerRef} className="border-t-16 border-white" />
+    <section className="w-full bg-white border-l-8 border-r-8 border-white">
+      <div ref={dividerRef} className="border-t-8 border-white" />
 
       <div className="py-12 md:py-16 px-12 sm:px-16 lg:px-20">
         <div className="max-w-7xl mx-auto">
@@ -102,9 +120,9 @@ export default function ProductsSection() {
         </div>
       </div>
 
-      <div ref={imagesContainerRef} className="w-full h-screen flex border-t-16 border-white">
-        {products.map((product) => (
-          <div key={product.id} className="flex-1 relative h-full overflow-hidden group">
+      <div ref={imagesContainerRef} className="w-full grid grid-cols-2 gap-0 border-t-8 border-white">
+        {products.map((product, index) => (
+          <div key={product.id} className="relative h-96 md:h-screen overflow-hidden group">
             {product.type === "image" && (
               <Image
                 src={product.image || "/placeholder.svg"}
@@ -118,14 +136,17 @@ export default function ProductsSection() {
             )}
 
             <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-8">
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">{product.title}</h3>
-              <p className="text-sm md:text-base text-white/90 leading-relaxed mb-4 line-clamp-3">
+              <h3 className="text-lg md:text-2xl font-bold text-white mb-2">{product.title}</h3>
+              <p className="text-xs md:text-sm text-white/90 leading-relaxed mb-3 line-clamp-2">
                 {product.description}
               </p>
-              <p className="text-xl md:text-2xl font-bold text-white">{product.price}</p>
+              <p className="text-lg md:text-xl font-bold text-white">{product.price}</p>
             </div>
 
-            {product.id === 1 && <div className="absolute right-0 top-0 bottom-0 w-1 bg-white z-10" />}
+            {(index === 1 || index === 3) && <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-white z-10" />}
+            {index < 2 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white z-10" />}
+            {(index === 0 || index === 2) && <div className="absolute right-0 top-0 bottom-0 w-8 border-r-8 border-white" />}
+            {(index === 0 || index === 1) && <div className="absolute bottom-0 left-0 right-0 h-8 border-b-8 border-white" />}
           </div>
         ))}
       </div>

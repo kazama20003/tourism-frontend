@@ -166,18 +166,37 @@
     background-color: hsl(var(--sidebar-border));
   }
 }
-/* Oculta el cursor del sistema SOLO donde se coloque esta clase */
+
+/* Added custom cursor styles for hiding system cursor and allowing interactions */
 .hide-system-cursor {
   cursor: none !important;
 }
 
-/* Para inputs, botones, links, NO ocultamos el cursor */
 .hide-system-cursor input,
 .hide-system-cursor textarea {
   cursor: text !important;
 }
 
-.hide-system-cursor button,
 .hide-system-cursor a {
   cursor: pointer !important;
+}
+
+/* Added cursor styles to prevent selection and focus visual conflicts */
+[data-cursor-element="true"] {
+  cursor: none !important;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-cursor-element="true"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[data-cursor-element="true"]:active {
+  outline: none !important;
+  box-shadow: none !important;
 }

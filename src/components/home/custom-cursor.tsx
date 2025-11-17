@@ -75,37 +75,44 @@ export function CustomCursor({ children, scrollToId = "reservar" }: CustomCursor
     });
   }, [isHovering]);
 
-  const handleCursorClick = () => {
-    const element = document.getElementById(scrollToId);
-    console.log("[v0] Buscando elemento con id:", scrollToId);
-    console.log("[v0] Elemento encontrado:", element);
-    if (element) {
-      console.log("[v0] Scrolleando a:", scrollToId);
-      element.scrollIntoView({ behavior: "smooth" });
-    } else {
-      console.log("[v0] No se encontró elemento con id:", scrollToId);
+  const handleCursorClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Only proceed if clicking directly on cursor or text
+    if (e.target === cursorRef.current || e.target === textRef.current) {
+      const element = document.getElementById(scrollToId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
     }
+    // Blur the element after click to remove focus styling
+    (e.currentTarget as HTMLElement).blur();
+    e.stopPropagation();
   };
 
   return (
     <div
       ref={wrapperRef}
       className="relative hide-system-cursor"
-      onClick={handleCursorClick}
+      style={{ cursor: 'none' }}
     >
       <div
         ref={cursorRef}
         className="
           fixed top-0 left-0 w-16 h-16 rounded-full
-          pointer-events-none z-[9999]
+          pointer-events-auto z-[9999]
           mix-blend-difference flex items-center justify-center
+          user-select-none
+          outline-none focus:outline-none active:outline-none
         "
-        style={{ opacity: isHovering ? 1 : 0 }}
+        style={{ opacity: isHovering ? 1 : 0, cursor: 'none' }}
+        onClick={handleCursorClick}
+        data-cursor-element="true"
       >
         <div
           ref={textRef}
-          className="absolute text-black text-xs font-bold whitespace-nowrap"
-          style={{ opacity: 0 }}
+          className="absolute text-black text-xs font-bold whitespace-nowrap select-none"
+          style={{ opacity: 0, cursor: 'none' }}
         >
           RESERVAR
         </div>
