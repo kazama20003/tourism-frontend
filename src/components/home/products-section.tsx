@@ -112,7 +112,10 @@ export default function ProductsSection() {
                 elaboración de cultura y arte. Utilizamos técnicas ancestrales combinadas con innovación moderna para
                 ofrecer experiencias de sabor incomparables.
               </p>
-              <button className="text-black font-semibold text-xs md:text-sm hover:opacity-70 transition-opacity w-fit">
+              <button 
+                className="text-black font-semibold text-xs md:text-sm hover:opacity-70 transition-opacity w-fit" 
+                onClick={(e) => e.stopPropagation()}
+              >
                 EXPLORAR TOURS
               </button>
             </div>
@@ -120,7 +123,7 @@ export default function ProductsSection() {
         </div>
       </div>
 
-      <div ref={imagesContainerRef} className="w-full grid grid-cols-2 gap-0 border-t-8 border-white">
+      <div ref={imagesContainerRef} className="w-full grid grid-cols-4 gap-0 border-t-8 border-white">
         {products.map((product, index) => (
           <div key={product.id} className="relative h-96 md:h-screen overflow-hidden group">
             {product.type === "image" && (
@@ -140,13 +143,22 @@ export default function ProductsSection() {
               <p className="text-xs md:text-sm text-white/90 leading-relaxed mb-3 line-clamp-2">
                 {product.description}
               </p>
-              <p className="text-lg md:text-xl font-bold text-white">{product.price}</p>
+              <p className="text-lg md:text-xl font-bold text-white mb-3">{product.price}</p>
+              <button 
+                className="text-white font-semibold text-xs underline hover:opacity-70 transition-opacity w-fit"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const reservarElement = document.getElementById("reservar")
+                  if (reservarElement) {
+                    reservarElement.scrollIntoView({ behavior: "smooth" })
+                  }
+                }}
+              >
+                Reservar
+              </button>
             </div>
 
-            {(index === 1 || index === 3) && <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-white z-10" />}
-            {index < 2 && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white z-10" />}
-            {(index === 0 || index === 2) && <div className="absolute right-0 top-0 bottom-0 w-8 border-r-8 border-white" />}
-            {(index === 0 || index === 1) && <div className="absolute bottom-0 left-0 right-0 h-8 border-b-8 border-white" />}
+            {index < products.length - 1 && <div className="absolute right-0 top-0 bottom-0 w-8 border-r-8 border-white" />}
           </div>
         ))}
       </div>

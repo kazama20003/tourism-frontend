@@ -12,7 +12,9 @@ export default function Home() {
       <HeroSection />
      </CustomCursor>
         <div id="reservar">
-        <ProductsSection />
+         <CustomCursor text="+TOURS" navigateTo="/tours">
+          <ProductsSection />
+        </CustomCursor>
       </div>
       <FeaturedSection />
       

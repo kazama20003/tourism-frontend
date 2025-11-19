@@ -2,17 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { useRouter } from 'next/navigation';
 
 interface CustomCursorProps {
   children: React.ReactNode;
+  text?: string;
   scrollToId?: string;
+  navigateTo?: string;
 }
 
-export function CustomCursor({ children, scrollToId = "reservar" }: CustomCursorProps) {
+export function CustomCursor({ 
+  children, 
+  text = "RESERVAR",
+  scrollToId,
+  navigateTo
+}: CustomCursorProps) {
   const [isHovering, setIsHovering] = useState(false);
   const cursorRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const cursor = cursorRef.current;
@@ -80,12 +89,15 @@ export function CustomCursor({ children, scrollToId = "reservar" }: CustomCursor
     
     // Only proceed if clicking directly on cursor or text
     if (e.target === cursorRef.current || e.target === textRef.current) {
-      const element = document.getElementById(scrollToId);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
+      if (navigateTo) {
+        router.push(navigateTo);
+      } else if (scrollToId) {
+        const element = document.getElementById(scrollToId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
       }
     }
-    // Blur the element after click to remove focus styling
     (e.currentTarget as HTMLElement).blur();
     e.stopPropagation();
   };
@@ -114,7 +126,7 @@ export function CustomCursor({ children, scrollToId = "reservar" }: CustomCursor
           className="absolute text-black text-xs font-bold whitespace-nowrap select-none"
           style={{ opacity: 0, cursor: 'none' }}
         >
-          RESERVAR
+          {text}
         </div>
 
         <div className="w-full h-full bg-white rounded-full" />
