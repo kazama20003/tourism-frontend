@@ -3,7 +3,7 @@ import { Poppins } from "next/font/google"
 import "./globals.css";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
-
+import { QueryProvider } from "@/components/providers/query-provider";
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -25,8 +25,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${poppins.variable}`}>
+        <QueryProvider>
         <Suspense fallback={null}>{children}</Suspense>
         <Toaster></Toaster>
+        </QueryProvider>
       </body>
     </html>
   );

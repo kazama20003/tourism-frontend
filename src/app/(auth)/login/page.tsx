@@ -1,16 +1,75 @@
 "use client"
 
+import type React from "react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react"
+import { usePost } from "@/hooks/use-api"
+import { decodeToken, getRedirectByRole } from "@/lib/utils"
+import type { AuthResponse, LoginCredentials, RegisterCredentials } from "@/types/auth"
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4002/api"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [currentView, setCurrentView] = useState<"login" | "register" | "forgot">("login")
+
+  // Form state
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+
+  const loginMutation = usePost<AuthResponse, LoginCredentials>("/auth/login/local", {
+    onSuccess: (data) => {
+      const payload = decodeToken(data.access_token)
+
+      if (payload) {
+        router.push(getRedirectByRole(payload.roles))
+      }
+    },
+  })
+
+  const registerMutation = usePost<AuthResponse, RegisterCredentials>("/auth/register", {
+    onSuccess: (data) => {
+      const payload = decodeToken(data.access_token)
+
+      if (payload) {
+        router.push(getRedirectByRole(payload.roles))
+      }
+    },
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (currentView === "login") {
+      loginMutation.mutate({ email, password })
+    } else if (currentView === "register") {
+      if (password !== confirmPassword) {
+        alert("Las contraseñas no coinciden")
+        return
+      }
+      registerMutation.mutate({ name, email, password })
+    }
+  }
+
+  const loginWithGoogle = () => {
+    window.location.href = `${API_BASE_URL}/auth/google`
+  }
+
+  const loginWithFacebook = () => {
+    window.location.href = `${API_BASE_URL}/auth/facebook`
+  }
+
+  const isLoading = loginMutation.isPending || registerMutation.isPending
+  const error = loginMutation.error || registerMutation.error
 
   return (
     <div className="min-h-screen flex font-sans">
@@ -47,10 +106,11 @@ export default function LoginPage() {
             <h1 className="text-xl font-semibold text-foreground">E-tourims</h1>
           </div>
 
-          <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2 text-center">
               {currentView === "forgot" && (
                 <Button
+                  type="button"
                   variant="ghost"
                   onClick={() => setCurrentView("login")}
                   className="absolute left-8 top-8 p-2 hover:bg-muted cursor-pointer"
@@ -70,6 +130,8 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {error && <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg">{error.message}</div>}
+
             <div className="space-y-4">
               {currentView === "register" && (
                 <div className="space-y-2">
@@ -80,6 +142,9 @@ export default function LoginPage() {
                     id="name"
                     type="text"
                     placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
                     className="h-12 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
                   />
                 </div>
@@ -93,6 +158,9 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="user@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   className="h-12 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
                 />
               </div>
@@ -107,6 +175,9 @@ export default function LoginPage() {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
                       className="h-12 pr-10 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
                     />
                     <Button
@@ -136,6 +207,9 @@ export default function LoginPage() {
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
                       className="h-12 pr-10 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
                     />
                     <Button
@@ -164,6 +238,7 @@ export default function LoginPage() {
                     </Label>
                   </div>
                   <Button
+                    type="button"
                     variant="link"
                     className="p-0 h-auto text-sm text-primary hover:text-primary/80 cursor-pointer"
                     onClick={() => setCurrentView("forgot")}
@@ -174,10 +249,20 @@ export default function LoginPage() {
               )}
             </div>
 
-            <Button className="w-full h-12 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-none cursor-pointer">
-              {currentView === "login" && "Log In"}
-              {currentView === "register" && "Create Account"}
-              {currentView === "forgot" && "Send Reset Link"}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-12 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-none cursor-pointer"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  {currentView === "login" && "Log In"}
+                  {currentView === "register" && "Create Account"}
+                  {currentView === "forgot" && "Send Reset Link"}
+                </>
+              )}
             </Button>
 
             {currentView !== "forgot" && (
@@ -195,7 +280,9 @@ export default function LoginPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Button
+                    type="button"
                     variant="outline"
+                    onClick={loginWithGoogle}
                     className="h-12 border-border hover:bg-muted hover:text-foreground rounded-lg bg-background shadow-none cursor-pointer"
                   >
                     <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -219,7 +306,9 @@ export default function LoginPage() {
                     Google
                   </Button>
                   <Button
+                    type="button"
                     variant="outline"
+                    onClick={loginWithFacebook}
                     className="h-12 border-border hover:bg-muted hover:text-foreground rounded-lg bg-background shadow-none cursor-pointer"
                   >
                     <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
@@ -237,8 +326,9 @@ export default function LoginPage() {
             <div className="text-center text-sm text-muted-foreground">
               {currentView === "login" && (
                 <>
-                  Don t Have An Account?{" "}
+                  {"Don't Have An Account? "}
                   <Button
+                    type="button"
                     variant="link"
                     className="p-0 h-auto text-sm text-primary hover:text-primary/80 font-medium cursor-pointer"
                     onClick={() => setCurrentView("register")}
@@ -251,6 +341,7 @@ export default function LoginPage() {
                 <>
                   Already Have An Account?{" "}
                   <Button
+                    type="button"
                     variant="link"
                     className="p-0 h-auto text-sm text-primary hover:text-primary/80 font-medium cursor-pointer"
                     onClick={() => setCurrentView("login")}
@@ -263,6 +354,7 @@ export default function LoginPage() {
                 <>
                   Remember Your Password?{" "}
                   <Button
+                    type="button"
                     variant="link"
                     className="p-0 h-auto text-sm text-primary hover:text-primary/80 font-medium cursor-pointer"
                     onClick={() => setCurrentView("login")}
@@ -272,7 +364,7 @@ export default function LoginPage() {
                 </>
               )}
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
