@@ -1,54 +1,64 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4002/api"
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios"
+import { API_BASE_URL } from "@/lib/constants"
 
-type RequestOptions = {
+type RequestOptions<TBody = unknown> = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
-  body?: unknown
+  body?: TBody
   headers?: Record<string, string>
 }
 
-export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+// Axios instance
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+})
+
+// Interceptor global de errores (Opcional)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("[API Error]", error.response?.data?.message || error.message)
+    return Promise.reject(error)
+  },
+)
+
+export async function apiClient<TResponse, TBody = unknown>(
+  endpoint: string,
+  options: RequestOptions<TBody> = {},
+): Promise<TResponse> {
   const { method = "GET", body, headers = {} } = options
 
-  const config: RequestInit = {
+  const config: AxiosRequestConfig = {
     method,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-    },
+    headers,
+    ...(body && { data: body }),
+    url: endpoint,
   }
 
-  if (body) {
-    config.body = JSON.stringify(body)
+  const response: AxiosResponse<TResponse> = await api.request<TResponse>(config)
+
+  // Axios NO usa ok: se valida con status
+  if (response.status < 200 || response.status >= 300) {
+    const errorData = response.data as { message?: string }
+    throw new Error(errorData.message ?? `Error: ${response.status}`)
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.message || `Error: ${response.status}`)
-  }
-
-  const text = await response.text()
-  return (text ? JSON.parse(text) : null) as T
+  return response.data
 }
 
-export function apiGet<T>(endpoint: string, headers?: Record<string, string>) {
-  return apiClient<T>(endpoint, { method: "GET", headers })
-}
+// Métodos HTTP helpers
+export const apiGet = <T>(endpoint: string, headers?: Record<string, string>) =>
+  apiClient<T>(endpoint, { method: "GET", headers })
 
-export function apiPost<T>(endpoint: string, body?: unknown, headers?: Record<string, string>) {
-  return apiClient<T>(endpoint, { method: "POST", body, headers })
-}
+export const apiPost = <T, B>(endpoint: string, body?: B, headers?: Record<string, string>) =>
+  apiClient<T, B>(endpoint, { method: "POST", body, headers })
 
-export function apiPut<T>(endpoint: string, body?: unknown, headers?: Record<string, string>) {
-  return apiClient<T>(endpoint, { method: "PUT", body, headers })
-}
+export const apiPut = <T, B>(endpoint: string, body?: B, headers?: Record<string, string>) =>
+  apiClient<T, B>(endpoint, { method: "PUT", body, headers })
 
-export function apiPatch<T>(endpoint: string, body?: unknown, headers?: Record<string, string>) {
-  return apiClient<T>(endpoint, { method: "PATCH", body, headers })
-}
+export const apiPatch = <T, B>(endpoint: string, body?: B, headers?: Record<string, string>) =>
+  apiClient<T, B>(endpoint, { method: "PATCH", body, headers })
 
-export function apiDelete<T>(endpoint: string, headers?: Record<string, string>) {
-  return apiClient<T>(endpoint, { method: "DELETE", headers })
-}
+export const apiDelete = <T>(endpoint: string, headers?: Record<string, string>) =>
+  apiClient<T>(endpoint, { method: "DELETE", headers })

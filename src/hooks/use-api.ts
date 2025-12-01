@@ -7,7 +7,7 @@ import {
   type UseQueryOptions,
   type UseMutationOptions,
 } from "@tanstack/react-query"
-import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from "@/lib/api"
+import { api } from "@/lib/api"
 
 export function useApiQuery<T>(
   key: string[],
@@ -16,7 +16,7 @@ export function useApiQuery<T>(
 ) {
   return useQuery<T, Error>({
     queryKey: key,
-    queryFn: () => apiGet<T>(endpoint),
+    queryFn: () => api.get<T>(endpoint).then((res) => res.data),
     ...options,
   })
 }
@@ -36,16 +36,15 @@ export function useApiMutation<TData, TVariables, TContext = unknown>(
   return useMutation<TData, Error, TVariables, TContext>({
     mutationFn: async (variables) => {
       const url = typeof endpoint === "function" ? endpoint(variables) : endpoint
-
       switch (method) {
         case "post":
-          return apiPost<TData>(url, variables)
+          return api.post<TData>(url, variables).then((res) => res.data)
         case "put":
-          return apiPut<TData>(url, variables)
+          return api.put<TData>(url, variables).then((res) => res.data)
         case "patch":
-          return apiPatch<TData>(url, variables)
+          return api.patch<TData>(url, variables).then((res) => res.data)
         case "delete":
-          return apiDelete<TData>(url)
+          return api.delete<TData>(url).then((res) => res.data)
       }
     },
     onSuccess: (data, variables, context, meta) => {

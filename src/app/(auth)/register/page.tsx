@@ -1,16 +1,48 @@
 "use client"
 
+import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useRegister } from "@/hooks/use-auth"
+import { getOAuthRedirectUrl } from "@/hooks/use-auth"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordError, setPasswordError] = useState("")
+
+  const registerMutation = useRegister()
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordError("")
+
+    if (password !== confirmPassword) {
+      setPasswordError("Las contraseñas no coinciden")
+      return
+    }
+
+    registerMutation.register({
+      firstName,
+      lastName,
+      email,
+      password,
+    })
+  }
+
+  const handleOAuthRegister = (provider: "google" | "facebook") => {
+    window.location.href = getOAuthRedirectUrl(provider)
+  }
 
   return (
     <div className="min-h-screen flex font-sans">
@@ -49,23 +81,48 @@ export default function RegisterPage() {
             <h1 className="text-xl font-semibold text-foreground">E-tourims</h1>
           </div>
 
-          <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2 text-center">
               <h2 className="text-3xl text-foreground">Create Account</h2>
               <p className="text-muted-foreground">Join E-tourims and start planning your next adventure today.</p>
             </div>
 
+            {(registerMutation.error || passwordError) && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg">
+                {registerMutation.error?.message || passwordError}
+              </div>
+            )}
+
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium text-foreground">
-                  Full Name
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  className="h-12 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName" className="text-sm font-medium text-foreground">
+                    First Name
+                  </Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="John"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    className="h-12 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName" className="text-sm font-medium text-foreground">
+                    Last Name
+                  </Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Doe"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    className="h-12 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -76,6 +133,9 @@ export default function RegisterPage() {
                   id="email"
                   type="email"
                   placeholder="user@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   className="h-12 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
                 />
               </div>
@@ -89,6 +149,9 @@ export default function RegisterPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
                     className="h-12 pr-10 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
                   />
                   <Button
@@ -116,6 +179,9 @@ export default function RegisterPage() {
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
                     className="h-12 pr-10 border-border focus:ring-0 shadow-none rounded-lg bg-background focus:border-primary"
                   />
                   <Button
@@ -142,8 +208,12 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <Button className="w-full h-12 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-none cursor-pointer">
-              Create Account
+            <Button
+              type="submit"
+              disabled={registerMutation.isPending}
+              className="w-full h-12 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-none cursor-pointer"
+            >
+              {registerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
             </Button>
 
             <div className="relative">
@@ -157,7 +227,9 @@ export default function RegisterPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <Button
+                type="button"
                 variant="outline"
+                onClick={() => handleOAuthRegister("google")}
                 className="h-12 border-border hover:bg-muted hover:text-foreground rounded-lg bg-background shadow-none cursor-pointer"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -181,7 +253,9 @@ export default function RegisterPage() {
                 Google
               </Button>
               <Button
+                type="button"
                 variant="outline"
+                onClick={() => handleOAuthRegister("facebook")}
                 className="h-12 border-border hover:bg-muted hover:text-foreground rounded-lg bg-background shadow-none cursor-pointer"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
@@ -196,11 +270,11 @@ export default function RegisterPage() {
 
             <div className="text-center text-sm text-muted-foreground">
               Already Have An Account?{" "}
-              <Link href="/" className="text-primary hover:text-primary/80 font-medium">
+              <Link href="/login" className="text-primary hover:text-primary/80 font-medium">
                 Sign In.
               </Link>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

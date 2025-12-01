@@ -1,5 +1,6 @@
-import {  SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+"use client"
 
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,160 +17,91 @@ import {
   Calendar,
   MoreHorizontal,
   ArrowUpRight,
-  ArrowDownRight,
+  Loader2,
+  Edit,
+  Eye,
+  Trash2,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useTours, useDeleteTour } from "@/hooks/use-tours"
+import type { Tour } from "@/types/tour"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export default function ToursPage() {
-  const tourStats = [
-    {
-      title: "Tours Totales",
-      value: "156",
-      change: "+12",
-      trend: "up",
-      icon: MapPin,
-    },
-    {
-      title: "Tours Activos",
-      value: "47",
-      change: "-3",
-      trend: "down",
-      icon: Calendar,
-    },
-    {
-      title: "Capacidad Total",
-      value: "2,840",
-      change: "+180",
-      trend: "up",
-      icon: Users,
-    },
-    {
-      title: "Ingresos Tours",
-      value: "$184,592",
-      change: "+15.2%",
-      trend: "up",
-      icon: DollarSign,
-    },
-  ]
+  const router = useRouter()
+  const { data: toursData, isLoading } = useTours()
+  const deleteTourMutation = useDeleteTour()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    totalCapacity: 0,
+    totalRevenue: 0,
+  })
 
-  const tours = [
-    {
-      id: "TUR-001",
-      name: "Tour Histórico Centro",
-      destination: "Ciudad Colonial",
-      duration: "4 horas",
-      price: "$45",
-      capacity: 25,
-      booked: 18,
-      status: "Activo",
-      nextDate: "2025-10-20",
-    },
-    {
-      id: "TUR-002",
-      name: "Aventura en la Montaña",
-      destination: "Sierra Nevada",
-      duration: "8 horas",
-      price: "$120",
-      capacity: 15,
-      booked: 15,
-      status: "Completo",
-      nextDate: "2025-10-18",
-    },
-    {
-      id: "TUR-003",
-      name: "Playa y Snorkel",
-      destination: "Bahía Azul",
-      duration: "6 horas",
-      price: "$85",
-      capacity: 30,
-      booked: 22,
-      status: "Activo",
-      nextDate: "2025-10-19",
-    },
-    {
-      id: "TUR-004",
-      name: "Tour Gastronómico",
-      destination: "Mercado Central",
-      duration: "3 horas",
-      price: "$55",
-      capacity: 20,
-      booked: 8,
-      status: "Activo",
-      nextDate: "2025-10-21",
-    },
-    {
-      id: "TUR-005",
-      name: "Cascadas y Naturaleza",
-      destination: "Parque Nacional",
-      duration: "10 horas",
-      price: "$150",
-      capacity: 12,
-      booked: 0,
-      status: "Cancelado",
-      nextDate: "2025-10-25",
-    },
-    {
-      id: "TUR-006",
-      name: "City Night Tour",
-      destination: "Centro Urbano",
-      duration: "3 horas",
-      price: "$40",
-      capacity: 35,
-      booked: 28,
-      status: "Activo",
-      nextDate: "2025-10-17",
-    },
-    {
-      id: "TUR-007",
-      name: "Viñedos y Cata",
-      destination: "Valle del Vino",
-      duration: "7 horas",
-      price: "$95",
-      capacity: 18,
-      booked: 16,
-      status: "Activo",
-      nextDate: "2025-10-22",
-    },
-    {
-      id: "TUR-008",
-      name: "Safari Fotográfico",
-      destination: "Reserva Natural",
-      duration: "5 horas",
-      price: "$110",
-      capacity: 10,
-      booked: 10,
-      status: "Completo",
-      nextDate: "2025-10-19",
-    },
-  ]
+  useEffect(() => {
+    if (toursData?.data) {
+      const tours = toursData.data
+      const activeCount = tours.filter((t: Tour) => t.isActive !== false).length
+      const capacitySum = tours.reduce((sum: number, t: Tour) => sum + (t.capacity || 0), 0)
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<
-      string,
-      { variant: "default" | "secondary" | "destructive" | "outline"; className: string }
-    > = {
-      Activo: {
-        variant: "default",
-        className: "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20",
-      },
-      Completo: {
-        variant: "secondary",
-        className: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20",
-      },
-      Cancelado: {
-        variant: "destructive",
-        className: "bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20",
-      },
+      setStats({
+        total: tours.length,
+        active: activeCount,
+        totalCapacity: capacitySum,
+        totalRevenue: tours.length * 150, // placeholder calculation
+      })
     }
-    const config = variants[status] || variants["Activo"]
+  }, [toursData])
+
+  const handleDeleteTour = async (tourId: string) => {
+    deleteTourMutation.mutate(tourId, {
+      onSuccess: () => {
+        toast.success("Tour eliminado correctamente")
+      },
+      onError: () => {
+        toast.error("Error al eliminar el tour")
+      },
+    })
+  }
+
+  const filteredTours =
+    toursData?.data?.filter(
+      (tour: Tour) =>
+        (tour.title ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (tour.locationName ?? "").toLowerCase().includes(searchQuery.toLowerCase()),
+    ) || []
+
+  const getStatusBadge = (isActive?: boolean) => {
+    if (isActive === false) {
+      return (
+        <Badge variant="destructive" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">
+          Inactivo
+        </Badge>
+      )
+    }
     return (
-      <Badge variant={config.variant} className={config.className}>
-        {status}
+      <Badge
+        variant="default"
+        className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20"
+      >
+        Activo
       </Badge>
     )
   }
 
-  const getOccupancyColor = (booked: number, capacity: number) => {
+  const getOccupancyColor = (booked: number, capacity?: number) => {
+    if (!capacity) return "text-muted-foreground"
     const percentage = (booked / capacity) * 100
     if (percentage >= 90) return "text-emerald-500"
     if (percentage >= 70) return "text-blue-500"
@@ -177,133 +109,198 @@ export default function ToursPage() {
     return "text-muted-foreground"
   }
 
+  const getTourStats = () => {
+    if (!toursData?.data) return { booked: 0, capacity: 0 }
+    const bookingsSum = toursData.data.reduce((sum: number) => sum + 1, 0)
+    return { booked: bookingsSum, capacity: stats.totalCapacity }
+  }
+
   return (
-      <SidebarInset>
-        <div className="m-4 rounded-lg overflow-hidden">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-t-lg">
-            <div className="flex items-center gap-2 px-4 w-full">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <h1 className="text-xl font-semibold">Tours y Experiencias</h1>
-                  <p className="text-sm text-muted-foreground">Gestiona todos los tours disponibles</p>
-                </div>
-                <Button asChild>
-                  <Link href="/tours/nuevo">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nuevo Tour
-                  </Link>
-                </Button>
+    <SidebarInset>
+      <div className="m-4 rounded-lg overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-t-lg">
+          <div className="flex items-center gap-2 px-4 w-full">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <div className="flex items-center justify-between w-full">
+              <div>
+                <h1 className="text-xl font-semibold">Tours y Experiencias</h1>
+                <p className="text-sm text-muted-foreground">Gestiona todos los tours disponibles</p>
               </div>
+              <Button asChild>
+                <Link href="/dashboard/tours/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo Tour
+                </Link>
+              </Button>
             </div>
-          </header>
+          </div>
+        </header>
 
-          <main className="flex flex-1 flex-col gap-6 p-6 bg-background/50 backdrop-blur rounded-b-lg">
-            {/* Statistics Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {tourStats.map((stat) => {
-                const Icon = stat.icon
-                return (
-                  <Card key={stat.title} className="border-border/40 bg-card/50 backdrop-blur">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stat.value}</div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        {stat.trend === "up" ? (
-                          <ArrowUpRight className="h-3 w-3 text-emerald-500" />
-                        ) : (
-                          <ArrowDownRight className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={stat.trend === "up" ? "text-emerald-500" : "text-red-500"}>{stat.change}</span>{" "}
-                        vs mes anterior
-                      </p>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-
-            {/* Tours Table */}
+        <main className="flex flex-1 flex-col gap-6 p-6 bg-background/50 backdrop-blur rounded-b-lg">
+          {/* Statistics Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="border-border/40 bg-card/50 backdrop-blur">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Lista de Tours</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input type="search" placeholder="Buscar tours..." className="pl-8 w-[250px]" />
-                    </div>
-                  </div>
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tours Totales</CardTitle>
+                <MapPin className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                  <span className="text-emerald-500">+{stats.total > 0 ? Math.ceil(stats.total * 0.1) : 0}</span> vs mes
+                  anterior
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/40 bg-card/50 backdrop-blur">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tours Activos</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.active}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : 0}% del total
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/40 bg-card/50 backdrop-blur">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Capacidad Total</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalCapacity}</div>
+                <p className="text-xs text-muted-foreground">personas disponibles</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/40 bg-card/50 backdrop-blur">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Ingresos Tours</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                  <span className="text-emerald-500">+15.2%</span> vs mes anterior
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tours Table */}
+          <Card className="border-border/40 bg-card/50 backdrop-blur">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Lista de Tours</CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Buscar tours..."
+                      className="pl-8 w-[250px]"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
                       <TableHead>Nombre del Tour</TableHead>
                       <TableHead>Destino</TableHead>
                       <TableHead>Duración</TableHead>
                       <TableHead>Precio</TableHead>
                       <TableHead>Ocupación</TableHead>
-                      <TableHead>Próxima Fecha</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tours.map((tour) => (
-                      <TableRow key={tour.id}>
-                        <TableCell className="font-medium">{tour.id}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{tour.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{tour.destination}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            {tour.duration}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-semibold">{tour.price}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3 text-muted-foreground" />
-                            <span className={getOccupancyColor(tour.booked, tour.capacity)}>
-                              {tour.booked}/{tour.capacity}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(tour.nextDate).toLocaleDateString("es-ES", {
-                              day: "2-digit",
-                              month: "short",
-                            })}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(tour.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                    {filteredTours.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                          No se encontraron tours
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredTours.map((tour: Tour) => (
+                        <TableRow key={tour._id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{tour.title}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{tour.locationName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-muted-foreground" />
+                              {tour.durationDays}d {tour.durationHours || 0}h
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-semibold">${tour.currentPrice}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3 text-muted-foreground" />
+                              <span className={getOccupancyColor(0, tour.capacity)}>0/{tour.capacity || 0}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getStatusBadge(tour.isActive)}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => router.push(`/dashboard/tours/${tour._id}`)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Ver detalles
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => router.push(`/dashboard/tours/${tour._id}/edit`)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Editar tour
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                                  onClick={() => handleDeleteTour(tour._id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Eliminar tour
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </main>
-        </div>
-      </SidebarInset>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </SidebarInset>
   )
 }

@@ -1,58 +1,63 @@
-// User types based on backend schema
-
-export enum UserRole {
-  ADMIN = "admin",
-  USER = "user",
-}
-
 export enum AuthProvider {
   LOCAL = "local",
   GOOGLE = "google",
   FACEBOOK = "facebook",
 }
-
 export interface User {
   _id: string
-  fullName: string
+  id?: string
   email: string
-  password?: string
-  role: UserRole
-  authProvider: AuthProvider
-  phone?: string
+  firstName: string
+  lastName: string
+  fullName?: string
+  authProvider: AuthProvider | string
+  roles: string[]
+  isActive?: boolean
   country?: string
+  phone?: string
+  address?: string
+  documentType?: string
+  documentNumber?: string
+  externalId?: string
   createdAt: string
   updatedAt: string
 }
 
 export interface CreateUserDto {
-  fullName: string
+  firstName: string
+  lastName: string
   email: string
+  authProvider: string
   password?: string
-  role?: UserRole
-  authProvider?: AuthProvider
-  phone?: string
+  externalId?: string
+  roles?: string[]
   country?: string
+  phone?: string
+  address?: string
+  documentType?: string
+  documentNumber?: string
 }
 
 export interface UpdateUserDto {
-  fullName?: string
+  firstName?: string
+  lastName?: string
   email?: string
-  password?: string
-  role?: UserRole
-  authProvider?: AuthProvider
-  phone?: string
   country?: string
+  phone?: string
+  address?: string
+  documentType?: string
+  documentNumber?: string
+  roles?: string[]
 }
 
-export interface UserNameOnly {
-  _id: string
-  fullName: string
-}
-
-export interface UsersResponse {
-  data: User[]
-  message: string
-  total?: number
-  page?: number
-  limit?: number
+export interface PaginatedResponse<T> {
+  data: T[]
+  meta: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPrevPage: boolean
+  }
 }

@@ -32,10 +32,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useEffect, useState } from "react"
-import { usersService } from "@/services/users-service"
 import type { User } from "@/types/user"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { useUsers, useDeleteUser } from "@/hooks/use-users"
 
 function getProviderBadge(provider: string) {
   switch (provider.toLowerCase()) {
@@ -64,8 +64,8 @@ function getProviderBadge(provider: string) {
 
 export default function ClientsPage() {
   const router = useRouter()
-  const [clients, setClients] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: usersData, isLoading: loading } = useUsers()
+  const deleteUserMutation = useDeleteUser()
   const [searchQuery, setSearchQuery] = useState("")
   const [stats, setStats] = useState({
     total: 0,
@@ -75,51 +75,40 @@ export default function ClientsPage() {
   })
 
   useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true)
-      const response = await usersService.getUsers()
-      console.log("[v0] API Response:", response)
-      setClients(response.data || [])
-
-      const total = response.data?.length || 0
-      const google = response.data?.filter((u: User) => u.authProvider === "google").length || 0
-      const facebook = response.data?.filter((u: User) => u.authProvider === "facebook").length || 0
-      const local = response.data?.filter((u: User) => u.authProvider === "local").length || 0
-
-      setStats({ total, google, facebook, local })
-    } catch (error) {
-      console.error("[v0] Error loading users:", error)
-      toast.error("Error al cargar los clientes")
-    } finally {
-      setLoading(false)
+    if (usersData?.data) {
+      const users = usersData.data
+      setStats({
+        total: users.length,
+        google: users.filter((u: User) => u.authProvider === "google").length,
+        facebook: users.filter((u: User) => u.authProvider === "facebook").length,
+        local: users.filter((u: User) => u.authProvider === "local").length,
+      })
     }
-  }
+  }, [usersData])
 
   const handleDeleteUser = async (userId: string) => {
-    try {
-      await usersService.deleteUser(userId)
-      toast.success("Cliente eliminado correctamente")
-      loadUsers()
-    } catch (error) {
-      console.error("[v0] Error deleting user:", error)
-      toast.error("Error al eliminar el cliente")
-    }
+    deleteUserMutation.mutate(userId, {
+      onSuccess: () => {
+        toast.success("Cliente eliminado correctamente")
+      },
+      onError: () => {
+        toast.error("Error al eliminar el cliente")
+      },
+    })
   }
 
-  const filteredClients = clients.filter(
-    (client) =>
-      client.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const filteredClients =
+    usersData?.data?.filter(
+      (client: User) =>
+        (client.firstName ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (client.lastName ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (client.email ?? "").toLowerCase().includes(searchQuery.toLowerCase()),
+    ) || []
 
   return (
     <SidebarInset>
       <div className="m-4 rounded-lg overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-t-lg">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-t-lg">
           <div className="flex items-center gap-2 px-4 w-full">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -244,26 +233,33 @@ export default function ClientsPage() {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          filteredClients.map((client) => (
+                          filteredClients.map((client: User) => (
                             <TableRow key={client._id}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
                                   <Avatar className="h-8 w-8">
-                                    <AvatarImage src="/placeholder.svg" alt={client.fullName} />
+                                    <AvatarImage
+                                      src="/placeholder.svg"
+                                      alt={`${client.firstName} ${client.lastName}`}
+                                    />
                                     <AvatarFallback>
-                                      {client.fullName
+                                      {`${client.firstName || "U"} ${client.lastName || ""}`
+                                        .trim()
                                         .split(" ")
                                         .map((n) => n[0])
-                                        .join("")}
+                                        .join("")
+                                        .toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div>
-                                    <div className="font-medium">{client.fullName}</div>
+                                    <div className="font-medium">
+                                      {`${client.firstName || ""} ${client.lastName || ""}`.trim() || "Sin nombre"}
+                                    </div>
                                     <div className="text-xs text-muted-foreground">{client._id}</div>
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-muted-foreground">{client.email}</TableCell>
+                              <TableCell className="text-muted-foreground">{client.email || "-"}</TableCell>
                               <TableCell>{getProviderBadge(client.authProvider)}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -276,7 +272,9 @@ export default function ClientsPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant={client.role === "admin" ? "default" : "outline"}>{client.role}</Badge>
+                                <Badge variant={client.roles?.[0] === "ADMIN" ? "default" : "outline"}>
+                                  {client.roles?.[0] || "USER"}
+                                </Badge>
                               </TableCell>
                               <TableCell className="text-muted-foreground">{client.country || "-"}</TableCell>
                               <TableCell className="text-right">
@@ -321,27 +319,32 @@ export default function ClientsPage() {
                     </Table>
                   </div>
 
+                  {/* Mobile Card View */}
                   <div className="md:hidden space-y-4">
                     {filteredClients.length === 0 ? (
                       <div className="text-center text-muted-foreground py-8">No se encontraron clientes</div>
                     ) : (
-                      filteredClients.map((client) => (
+                      filteredClients.map((client: User) => (
                         <Card key={client._id} className="border-border/40">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10">
-                                  <AvatarImage src="/placeholder.svg" alt={client.fullName} />
+                                  <AvatarImage src="/placeholder.svg" alt={`${client.firstName} ${client.lastName}`} />
                                   <AvatarFallback>
-                                    {client.fullName
+                                    {`${client.firstName || "U"} ${client.lastName || ""}`
+                                      .trim()
                                       .split(" ")
                                       .map((n) => n[0])
-                                      .join("")}
+                                      .join("")
+                                      .toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <div className="font-medium">{client.fullName}</div>
-                                  <div className="text-sm text-muted-foreground">{client.email}</div>
+                                  <div className="font-medium">
+                                    {`${client.firstName || ""} ${client.lastName || ""}`.trim() || "Sin nombre"}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">{client.email || "-"}</div>
                                 </div>
                               </div>
                               <DropdownMenu>
@@ -353,7 +356,7 @@ export default function ClientsPage() {
                                 <DropdownMenuContent align="end" className="w-48">
                                   <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => router.push(`/dashboard/users/${client._id}`)}>
+                                  <DropdownMenuItem onClick={() => router.push(`/dashboard/users/${client._id}/edit`)}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Ver detalles
                                   </DropdownMenuItem>
@@ -383,7 +386,9 @@ export default function ClientsPage() {
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">Rol:</span>
-                                <Badge variant={client.role === "admin" ? "default" : "outline"}>{client.role}</Badge>
+                                <Badge variant={client.roles?.[0] === "ADMIN" ? "default" : "outline"}>
+                                  {client.roles?.[0] || "USER"}
+                                </Badge>
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-muted-foreground">País:</span>

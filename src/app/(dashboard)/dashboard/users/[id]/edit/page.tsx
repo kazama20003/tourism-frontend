@@ -1,93 +1,71 @@
 "use client"
 
 import type React from "react"
-
 import { SidebarInset } from "@/components/ui/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, User, Mail, Lock, Shield, Loader2, Save } from "lucide-react"
+import { ArrowLeft, User, Mail, Shield, Loader2, Save } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { usersService } from "@/services/users-service"
-import type { User as UserType, UpdateUserDto, UserRole, AuthProvider } from "@/types/user"
+import { useUser, useUpdateUser } from "@/hooks/use-users"
+import type { UpdateUserDto } from "@/types/user"
 import { toast } from "sonner"
-import { PhoneInput } from "@/components/global/phone-input"
+
 export default function EditUserPage() {
   const router = useRouter()
   const params = useParams()
   const userId = params.id as string
 
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [user, setUser] = useState<UserType | null>(null)
+  const { data: user, isLoading } = useUser(userId)
+  const updateUserMutation = useUpdateUser()
   const [formData, setFormData] = useState<UpdateUserDto>({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    role: undefined,
-    authProvider: undefined,
+    roles: [],
     phone: "",
     country: "",
   })
 
   useEffect(() => {
-    loadUser()
-  }, [userId])
-
-  const loadUser = async () => {
-    try {
-      setLoading(true)
-      const userData = await usersService.getUserById(userId)
-      setUser(userData)
+    if (user) {
       setFormData({
-        fullName: userData.fullName,
-        email: userData.email,
-        role: userData.role,
-        authProvider: userData.authProvider,
-        phone: userData.phone || "",
-        country: userData.country || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        roles: user.roles || [],
+        phone: user.phone || "",
+        country: user.country || "",
       })
-    } catch (error) {
-      console.error("[v0] Error loading user:", error)
-      toast.error("Error al cargar el usuario")
-      router.push("/dashboard/users")
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.fullName || !formData.email) {
+    if (!formData.firstName || !formData.lastName || !formData.email) {
       toast.error("Por favor completa los campos requeridos")
       return
     }
 
-    try {
-      setSubmitting(true)
-      await usersService.updateUser(userId, formData)
-      toast.success("Usuario actualizado correctamente")
-      router.push("/dashboard/users")
-    } catch (error) {
-      console.error("[v0] Error updating user:", error)
-      toast.error("Error al actualizar el usuario")
-    } finally {
-      setSubmitting(false)
-    }
+    updateUserMutation.mutate(
+      { id: userId, data: formData },
+      {
+        onSuccess: () => {
+          toast.success("Usuario actualizado correctamente")
+          router.push("/dashboard/users")
+        },
+        onError: () => {
+          toast.error("Error al actualizar el usuario")
+        },
+      },
+    )
   }
 
-  const handlePhoneChange = (phone: string, country: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      phone,
-      country,
-    }))
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <SidebarInset>
         <div className="flex items-center justify-center h-screen">
@@ -100,7 +78,7 @@ export default function EditUserPage() {
   return (
     <SidebarInset>
       <div className="m-4 rounded-lg overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-t-lg px-4">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-t-lg px-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -123,17 +101,34 @@ export default function EditUserPage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">
-                      Nombre Completo <span className="text-red-500">*</span>
+                    <Label htmlFor="firstName">
+                      Nombre <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="fullName"
-                        placeholder="Ej: Juan Pérez"
+                        id="firstName"
+                        placeholder="Ej: Juan"
                         className="pl-9"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">
+                      Apellido <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="lastName"
+                        placeholder="Ej: Pérez"
+                        className="pl-9"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                         required
                       />
                     </div>
@@ -156,30 +151,26 @@ export default function EditUserPage() {
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono</Label>
-                  <PhoneInput
-                    value={formData.phone || ""}
-                    onChange={handlePhoneChange}
-                    placeholder="Ingresa tu número de teléfono"
-                  />
-                  <p className="text-xs text-muted-foreground">Selecciona tu país e ingresa tu número de teléfono</p>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Teléfono</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+51 987654321"
+                      value={formData.phone || ""}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="country">País</Label>
-                  <Input
-                    id="country"
-                    value={formData.country || ""}
-                    readOnly
-                    className="bg-muted/50"
-                    placeholder="Se llenará automáticamente al seleccionar el país en el teléfono"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Este campo se actualiza automáticamente según el país seleccionado en el teléfono
-                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">País</Label>
+                    <Input
+                      id="country"
+                      placeholder="Perú"
+                      value={formData.country || ""}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -190,76 +181,41 @@ export default function EditUserPage() {
                   <Shield className="h-5 w-5" />
                   Seguridad y Acceso
                 </CardTitle>
-                <CardDescription>Configuración de rol y autenticación</CardDescription>
+                <CardDescription>Configuración de rol</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Rol del Usuario</Label>
-                    <Select
-                      value={formData.role}
-                      onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}
-                    >
-                      <SelectTrigger id="role">
-                        <SelectValue placeholder="Selecciona un rol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">Usuario</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Define los permisos y accesos del usuario en el sistema
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="authProvider">Proveedor de Autenticación</Label>
-                    <Select
-                      value={formData.authProvider}
-                      onValueChange={(value) => setFormData({ ...formData, authProvider: value as AuthProvider })}
-                    >
-                      <SelectTrigger id="authProvider">
-                        <SelectValue placeholder="Selecciona un proveedor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="local">Local (Email/Password)</SelectItem>
-                        <SelectItem value="google">Google</SelectItem>
-                        <SelectItem value="facebook">Facebook</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Método de autenticación utilizado por el usuario</p>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Rol del Usuario</Label>
+                  <Select
+                    value={formData.roles?.[0] || "USER"}
+                    onValueChange={(value) => setFormData({ ...formData, roles: [value] })}
+                  >
+                    <SelectTrigger id="role">
+                      <SelectValue placeholder="Selecciona un rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USER">Usuario</SelectItem>
+                      <SelectItem value="ADMIN">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Define los permisos y accesos del usuario en el sistema
+                  </p>
                 </div>
-
-                {formData.authProvider === "local" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Nueva Contraseña</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Dejar en blanco para mantener la actual"
-                        className="pl-9"
-                        value={formData.password || ""}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Solo completa este campo si deseas cambiar la contraseña
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
             <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">
-              <Button type="button" variant="outline" onClick={() => router.back()} disabled={submitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={updateUserMutation.isPending}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? (
+              <Button type="submit" disabled={updateUserMutation.isPending}>
+                {updateUserMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Guardando...
