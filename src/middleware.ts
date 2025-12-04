@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { UserRole } from "@/types/auth"
+import { defaultLocale, isValidLocale } from "@/lib/i18n/config"
 
-// Rutas públicas que no requieren autenticación
 const publicRoutes = ["/login", "/register", "/forgot-password"]
 
-// Decodifica el JWT sin verificar la firma
 function decodeJwtPayload(token: string) {
   try {
     const base64Url = token.split(".")[1]
@@ -17,74 +16,119 @@ function decodeJwtPayload(token: string) {
   }
 }
 
+function getLocaleFromPathname(pathname: string): string | null {
+  const segments = pathname.split("/")
+  const potentialLocale = segments[1]
+  return isValidLocale(potentialLocale) ? potentialLocale : null
+}
+
+function getPathnameWithoutLocale(pathname: string): string {
+  const locale = getLocaleFromPathname(pathname)
+  if (locale) {
+    return pathname.replace(`/${locale}`, "") || "/"
+  }
+  return pathname
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Obtener el token de las cookies
+  // Skip static files and API routes
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.includes(".") ||
+    pathname.startsWith("/favicon")
+  ) {
+    return NextResponse.next()
+  }
+
+  const pathnameLocale = getLocaleFromPathname(pathname)
+  const pathnameWithoutLocale = getPathnameWithoutLocale(pathname)
+
+  if (!pathnameLocale) {
+    const acceptLanguage = request.headers.get("accept-language")
+    let locale = defaultLocale
+
+    if (acceptLanguage) {
+      const preferredLocale = acceptLanguage.split(",")[0].split("-")[0]
+      if (isValidLocale(preferredLocale)) {
+        locale = preferredLocale
+      }
+    }
+
+    const newUrl = new URL(`/${locale}${pathname}`, request.url)
+    newUrl.search = request.nextUrl.search
+    return NextResponse.redirect(newUrl)
+  }
+
   const token = request.cookies.get("token")?.value
 
-  // Si es ruta pública y tiene token, redirigir según rol
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  // Check if current path (without locale) is a public route
+  const isPublicRoute = publicRoutes.some((route) => pathnameWithoutLocale.startsWith(route))
+
+  if (isPublicRoute) {
     if (token) {
       const payload = decodeJwtPayload(token)
       if (payload && payload.roles) {
         const roles = payload.roles as UserRole[]
 
-        // CLIENT va a /users/profile
+        // CLIENT goes to /users/profile
         if (
           roles.includes(UserRole.CLIENT) &&
           !roles.some((r) => [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r))
         ) {
-          return NextResponse.redirect(new URL("/users/profile", request.url))
+          return NextResponse.redirect(new URL(`/${pathnameLocale}/users/profile`, request.url))
         }
 
-        // ADMIN, EDITOR, SUPPORT van a /dashboard
+        // ADMIN, EDITOR, SUPPORT go to /dashboard
         if (roles.some((r) => [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r))) {
-          return NextResponse.redirect(new URL("/dashboard", request.url))
+          return NextResponse.redirect(new URL(`/${pathnameLocale}/dashboard`, request.url))
         }
       }
     }
     return NextResponse.next()
   }
 
-  // Rutas protegidas: verificar autenticación
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url))
-  }
+  const isProtectedRoute = pathnameWithoutLocale.startsWith("/dashboard") || pathnameWithoutLocale.startsWith("/users")
 
-  const payload = decodeJwtPayload(token)
-
-  if (!payload) {
-    return NextResponse.redirect(new URL("/login", request.url))
-  }
-
-  // Verificar expiración del token
-  if (Date.now() >= payload.exp * 1000) {
-    const response = NextResponse.redirect(new URL("/login", request.url))
-    response.cookies.delete("token")
-    return response
-  }
-
-  const roles = payload.roles as UserRole[]
-
-  // Redirección según rol para rutas específicas
-  if (pathname.startsWith("/dashboard")) {
-    // Solo ADMIN, EDITOR, SUPPORT pueden acceder al dashboard
-    if (
-      roles.includes(UserRole.CLIENT) &&
-      !roles.some((r) => [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r))
-    ) {
-      return NextResponse.redirect(new URL("/users/profile", request.url))
+  if (isProtectedRoute) {
+    if (!token) {
+      return NextResponse.redirect(new URL(`/${pathnameLocale}/login`, request.url))
     }
-  }
 
-  if (pathname.startsWith("/users/profile")) {
-    // ADMIN, EDITOR, SUPPORT se redirigen al dashboard
-    if (
-      roles.some((r) => [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)) &&
-      !roles.includes(UserRole.CLIENT)
-    ) {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
+    const payload = decodeJwtPayload(token)
+
+    if (!payload) {
+      return NextResponse.redirect(new URL(`/${pathnameLocale}/login`, request.url))
+    }
+
+    // Check token expiration
+    if (Date.now() >= payload.exp * 1000) {
+      const response = NextResponse.redirect(new URL(`/${pathnameLocale}/login`, request.url))
+      response.cookies.delete("token")
+      return response
+    }
+
+    const roles = payload.roles as UserRole[]
+
+    // Role-based redirections
+    if (pathnameWithoutLocale.startsWith("/dashboard")) {
+      if (
+        roles.includes(UserRole.CLIENT) &&
+        !roles.some((r) => [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r))
+      ) {
+        return NextResponse.redirect(new URL(`/${pathnameLocale}/users/profile`, request.url))
+      }
+    }
+
+    if (pathnameWithoutLocale.startsWith("/users/profile")) {
+      if (
+        roles.some((r) => [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)) &&
+        !roles.includes(UserRole.CLIENT)
+      ) {
+        return NextResponse.redirect(new URL(`/${pathnameLocale}/dashboard`, request.url))
+      }
     }
   }
 
@@ -92,5 +136,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/register", "/forgot-password", "/dashboard/:path*", "/users/:path*"],
+  matcher: ["/((?!_next|api|favicon|.*\\..*).*)"],
 }
