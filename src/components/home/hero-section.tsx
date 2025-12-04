@@ -1,18 +1,18 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
+import { getHeroSectionDictionary } from "@/lib/i18n/dictionaries/hero-section"
+import type { Locale } from "@/lib/i18n/config"
 
 interface HeroSectionProps {
-  title: string
-  titleLine2: string
-  description: string
-  planVisit: string
-  shopNow: string
+  locale: Locale
 }
 
-export function HeroSection({ title, titleLine2, description, planVisit, shopNow }: HeroSectionProps) {
+export function HeroSection({ locale }: HeroSectionProps) {
+  const translations = getHeroSectionDictionary(locale)
+
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [audioActive, setAudioActive] = useState(false) // inicia en mute REAL
+  const [audioActive, setAudioActive] = useState(false)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -84,12 +84,13 @@ export function HeroSection({ title, titleLine2, description, planVisit, shopNow
         <div className="flex-1 flex flex-col justify-end">
           <div className="w-full px-8 sm:px-12 lg:px-16 pb-16 md:pb-20">
             <div className="max-w-2xl">
-              {/* Replace static text with translation props */}
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-                {title} <br /> {titleLine2}
+                {translations.title} <br /> {translations.titleLine2}
               </h1>
 
-              <p className="text-lg md:text-xl text-white/90 italic font-light max-w-md mb-8">{description}</p>
+              <p className="text-lg md:text-xl text-white/90 italic font-light max-w-md mb-8">
+                {translations.description}
+              </p>
             </div>
           </div>
         </div>
@@ -122,18 +123,17 @@ export function HeroSection({ title, titleLine2, description, planVisit, shopNow
 
           {/* BUTTONS */}
           <div className="flex gap-6 items-center">
-            {/* Update button text with translations */}
             <button
               onClick={(e) => e.stopPropagation()}
               className="px-8 py-3 bg-black text-white font-semibold rounded-full hover:bg-black/80 transition-all"
             >
-              {planVisit}
+              {translations.planVisit}
             </button>
             <button
               onClick={(e) => e.stopPropagation()}
               className="px-8 py-3 bg-transparent text-white font-semibold rounded-full hover:bg-white/10 transition-all"
             >
-              {shopNow}
+              {translations.shopNow}
             </button>
           </div>
         </div>

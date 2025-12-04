@@ -4,15 +4,24 @@ import { useEffect, useRef } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import Image from "next/image"
+import type { Locale } from "@/lib/i18n/config"
+import { getFeaturedSectionDictionary } from "@/lib/i18n/dictionaries/featured-section"
+
 gsap.registerPlugin(ScrollTrigger)
 
-export default function FeaturedSection() {
+export interface FeaturedSectionProps {
+  locale: Locale
+}
+
+export function FeaturedSection({ locale }: FeaturedSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const subtitleRef = useRef<HTMLParagraphElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
   const labelRef = useRef<HTMLDivElement>(null)
   const imagesContainerRef = useRef<HTMLDivElement>(null)
+
+  const dict = getFeaturedSectionDictionary(locale)
 
   useEffect(() => {
     const elements = [
@@ -60,22 +69,18 @@ export default function FeaturedSection() {
             {/* Title - Left Side */}
             <div>
               <h2 ref={titleRef} className="text-4xl md:text-5xl lg:text-6xl font-bold text-black leading-tight">
-                A Family Estate,
+                {dict.title}
               </h2>
               <p ref={subtitleRef} className="text-2xl md:text-3xl italic text-black/70 font-light mt-2">
-                Crafted By Generations.
+                {dict.titleLine2}
               </p>
             </div>
 
             {/* Description - Right Side */}
             <div ref={textRef} className="flex flex-col justify-start">
-              <p className="text-sm md:text-base text-black/80 leading-relaxed mb-6">
-                Maxwell Wines crafts premium wines that celebrate the limestone character of the estate. From bold
-                Shiraz to vibrant whites and the estates iconic meads, every bottle reflects a commitment to
-                sustainability and meticulous winemaking.
-              </p>
+              <p className="text-sm md:text-base text-black/80 leading-relaxed mb-6">{dict.description}</p>
               <button className="text-black font-semibold text-xs md:text-sm hover:opacity-70 transition-opacity w-fit">
-                SHOP WINE & MEAD →
+                {dict.shopButton}
               </button>
             </div>
           </div>
@@ -85,17 +90,17 @@ export default function FeaturedSection() {
       <div className="relative w-full overflow-hidden">
         {/* Label */}
         <div ref={labelRef} className="absolute top-6 left-6 z-10">
-          <p className="text-white font-semibold text-sm md:text-base tracking-wide">MAXWELL RESTAURANT</p>
+          <p className="text-white font-semibold text-sm md:text-base tracking-wide">{dict.restaurantLabel}</p>
         </div>
 
         <div ref={imagesContainerRef} className="relative h-96 md:h-[500px] lg:h-[600px] bg-gray-200 overflow-hidden">
           <Image
-  src="https://res.cloudinary.com/ddbzpbrje/image/upload/v1760740330/samples/food/pot-mussels.jpg"
-  alt="Maxwell Restaurant meat dish"
-  fill
-  className="object-cover"
-  sizes="(max-width: 768px) 100vw, 50vw"
-/>
+            src="https://res.cloudinary.com/ddbzpbrje/image/upload/v1760740330/samples/food/pot-mussels.jpg"
+            alt="Maxwell Restaurant"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
         </div>
       </div>
     </section>

@@ -30,8 +30,13 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>
 }>) {
   const { locale: localeParam } = await params
-  const locale: Locale = isValidLocale(localeParam) ? localeParam : defaultLocale
-  const dictionary = getDictionary(locale)
+
+  const locale: Locale = isValidLocale(localeParam)
+    ? localeParam
+    : defaultLocale
+
+  // 👇 ESTA ERA LA PIEZA QUE FALTABA
+  const dictionary = await getDictionary(locale)
 
   console.log("[v0] Layout rendering with locale:", locale, "dictionary nav.shop:", dictionary.nav.shop)
 
