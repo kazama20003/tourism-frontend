@@ -1,5 +1,11 @@
 import { api } from "@/lib/api"
-import type { Tour, CreateTourDto, UpdateTourDto, UpdateTourTranslationDto, PaginatedResponse } from "@/types/tour"
+import type {
+  Tour,
+  CreateTourDto,
+  UpdateTourDto,
+  UpdateTourTranslationDto,
+  PaginatedResponse,
+} from "@/types/tour"
 
 export const toursService = {
   // GET /tours?page=X&limit=Y&lang=XX
@@ -8,6 +14,14 @@ export const toursService = {
       params: { page, limit, ...(lang && { lang }) },
     })
     return response.data
+  },
+
+  // ⭐ GET /tours/popular?lang=XX  ← NUEVO
+  async getPopularTours(lang?: string) {
+    const response = await api.get<Tour[]>("/tours/popular", {
+      params: lang ? { lang } : {},
+    })
+    return response.data // Debe devolver EXACTAMENTE 4 tours
   },
 
   // GET /tours/:id?lang=XX

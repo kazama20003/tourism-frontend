@@ -4,6 +4,7 @@ import { toursService } from "@/services/tours-service"
 import type { CreateTourDto, UpdateTourDto, UpdateTourTranslationDto } from "@/types/tour"
 
 const TOURS_KEY = "tours-list"
+const POPULAR_TOURS_KEY = "tours-popular"
 
 // Supported languages for translations
 export const SUPPORTED_LANGUAGES = [
@@ -24,19 +25,18 @@ export function isValidLanguageCode(code: string): code is SupportedLanguageCode
   return SUPPORTED_LANGUAGES.some((lang) => lang.code === code)
 }
 
-// Fetcher for SWR
-const fetchTours = async ([, page, limit, lang]: [string, number, number, string | undefined]) => {
-  return toursService.getTours(page, limit, lang)
-}
+// Fetcher para tours paginados
+const fetchTours = async ([, page, limit, lang]: [string, number, number, string | undefined]) =>
+  toursService.getTours(page, limit, lang)
 
-// Hook for fetching tours with pagination
+// ➤ Hook: Obtener tours paginados
 export function useTours(page = 1, limit = 10, lang?: string) {
   return useSWR([TOURS_KEY, page, limit, lang], fetchTours, {
     revalidateOnFocus: false,
   })
 }
 
-// Hook for fetching a single tour
+// ➤ Hook: Obtener 1 tour
 export function useTour(id: string | null, lang?: string) {
   return useSWR(
     id ? ["tour", id, lang] : null,
@@ -45,12 +45,22 @@ export function useTour(id: string | null, lang?: string) {
   )
 }
 
-export function revalidateTours() {
-  // Revalidate all keys that start with TOURS_KEY
-  mutate((key) => Array.isArray(key) && key[0] === TOURS_KEY, undefined, { revalidate: true })
+// ➤ Hook: Obtener tours populares (DEVUELVE 4)
+export function usePopularTours(lang?: string) {
+  return useSWR(
+    [POPULAR_TOURS_KEY, lang],
+    async () => toursService.getPopularTours(lang),
+    { revalidateOnFocus: false },
+  )
 }
 
-// Hook for creating a tour
+// ➤ Revalidación global
+export function revalidateTours() {
+  mutate((key) => Array.isArray(key) && key[0] === TOURS_KEY, undefined, { revalidate: true })
+  mutate((key) => Array.isArray(key) && key[0] === POPULAR_TOURS_KEY, undefined, { revalidate: true })
+}
+
+// ➤ Crear tour
 export function useCreateTour() {
   return useSWRMutation("createTour", async (_, { arg }: { arg: CreateTourDto }) => {
     const result = await toursService.createTour(arg)
@@ -59,34 +69,37 @@ export function useCreateTour() {
   })
 }
 
-// Hook for updating a tour
+// ➤ Actualizar tour
 export function useUpdateTour() {
-  return useSWRMutation("updateTour", async (_, { arg }: { arg: { id: string; data: UpdateTourDto } }) => {
-    const result = await toursService.updateTour(arg.id, arg.data)
-    revalidateTours()
-    return result
-  })
+  return useSWRMutation(
+    "updateTour",
+    async (_, { arg }: { arg: { id: string; data: UpdateTourDto } }) => {
+      const result = await toursService.updateTour(arg.id, arg.data)
+      revalidateTours()
+      return result
+    },
+  )
 }
 
-// Hook for deleting a tour
+// ➤ Eliminar tour
 export function useDeleteTour() {
-  return useSWRMutation("deleteTour", async (_, { arg }: { arg: string }) => {
-    const result = await toursService.deleteTour(arg)
-    revalidateTours()
-    return result
-  })
+  return useSWRMutation(
+    "deleteTour",
+    async (_, { arg }: { arg: string }) => {
+      const result = await toursService.deleteTour(arg)
+      revalidateTours()
+      return result
+    },
+  )
 }
 
-// Hook for auto-translating a tour
+// ➤ Auto traducir tour
 export function useAutoTranslateTour() {
   return useSWRMutation(
     "autoTranslateTour",
     async (_, { arg }: { arg: { id: string; languages: SupportedLanguageCode[] } }) => {
-      // Validate all languages before sending
       const validLanguages = arg.languages.filter(isValidLanguageCode)
-      if (validLanguages.length === 0) {
-        throw new Error("No valid languages provided")
-      }
+      if (!validLanguages.length) throw new Error("No valid languages provided")
       const result = await toursService.autoTranslateTour(arg.id, validLanguages)
       revalidateTours()
       return result
@@ -94,11 +107,14 @@ export function useAutoTranslateTour() {
   )
 }
 
-// Hook for updating a tour translation
+// ➤ Actualizar traducción
 export function useUpdateTourTranslation() {
   return useSWRMutation(
     "updateTourTranslation",
-    async (_, { arg }: { arg: { id: string; lang: SupportedLanguageCode; data: UpdateTourTranslationDto } }) => {
+    async (
+      _,
+      { arg }: { arg: { id: string; lang: SupportedLanguageCode; data: UpdateTourTranslationDto } },
+    ) => {
       const result = await toursService.updateTourTranslation(arg.id, arg.lang, arg.data)
       revalidateTours()
       return result
