@@ -1,0 +1,810 @@
+import type { Locale } from "../config"
+
+export interface TourDetailDictionary {
+  breadcrumb: {
+    home: string
+    tours: string
+  }
+  hero: {
+    duration: string
+    day: string
+    days: string
+    hour: string
+    hours: string
+    rating: string
+    reviews: string
+    location: string
+  }
+  booking: {
+    title: string
+    priceFrom: string
+    perPerson: string
+    originalPrice: string
+    selectDate: string
+    travelers: string
+    adults: string
+    children: string
+    addToCart: string
+    bookNow: string
+    instantConfirmation: string
+    freeCancellation: string
+    bestPrice: string
+  }
+  sections: {
+    overview: string
+    itinerary: string
+    included: string
+    excluded: string
+    preparation: string
+    policies: string
+  }
+  overview: {
+    highlights: string
+    difficulty: string
+    difficultyLevels: {
+      easy: string
+      medium: string
+      hard: string
+    }
+    minAge: string
+    years: string
+    capacity: string
+    people: string
+    meetingPoint: string
+    startTime: string
+    languages: string
+  }
+  itinerary: {
+    dayLabel: string
+    activities: string
+    meals: {
+      breakfast: string
+      lunch: string
+      dinner: string
+    }
+    hotelNight: string
+  }
+  policies: {
+    cancellation: string
+    refund: string
+    changes: string
+  }
+  cta: {
+    title: string
+    description: string
+    button: string
+  }
+  cart: {
+    added: string
+    viewCart: string
+    continueShopping: string
+  }
+}
+
+const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
+  es: {
+    breadcrumb: {
+      home: "Inicio",
+      tours: "Tours",
+    },
+    hero: {
+      duration: "Duración",
+      day: "Día",
+      days: "Días",
+      hour: "Hora",
+      hours: "Horas",
+      rating: "Calificación",
+      reviews: "reseñas",
+      location: "Ubicación",
+    },
+    booking: {
+      title: "Reserva Tu Experiencia",
+      priceFrom: "Desde",
+      perPerson: "por persona",
+      originalPrice: "Precio original",
+      selectDate: "Seleccionar fecha",
+      travelers: "Viajeros",
+      adults: "Adultos",
+      children: "Niños",
+      addToCart: "Agregar al Carrito",
+      bookNow: "Reservar Ahora",
+      instantConfirmation: "Confirmación instantánea",
+      freeCancellation: "Cancelación gratuita",
+      bestPrice: "Mejor precio garantizado",
+    },
+    sections: {
+      overview: "Descripción",
+      itinerary: "Itinerario",
+      included: "Incluye",
+      excluded: "No Incluye",
+      preparation: "Qué Llevar",
+      policies: "Políticas",
+    },
+    overview: {
+      highlights: "Destacados",
+      difficulty: "Dificultad",
+      difficultyLevels: {
+        easy: "Fácil",
+        medium: "Moderado",
+        hard: "Difícil",
+      },
+      minAge: "Edad mínima",
+      years: "años",
+      capacity: "Capacidad",
+      people: "personas",
+      meetingPoint: "Punto de encuentro",
+      startTime: "Hora de inicio",
+      languages: "Idiomas",
+    },
+    itinerary: {
+      dayLabel: "Día",
+      activities: "Actividades",
+      meals: {
+        breakfast: "Desayuno",
+        lunch: "Almuerzo",
+        dinner: "Cena",
+      },
+      hotelNight: "Noche en hotel",
+    },
+    policies: {
+      cancellation: "Política de cancelación",
+      refund: "Política de reembolso",
+      changes: "Política de cambios",
+    },
+    cta: {
+      title: "¿Tienes Preguntas?",
+      description: "Nuestro equipo está disponible 24/7 para ayudarte a planificar tu aventura perfecta.",
+      button: "Contactar Ahora",
+    },
+    cart: {
+      added: "Agregado al carrito",
+      viewCart: "Ver Carrito",
+      continueShopping: "Continuar Comprando",
+    },
+  },
+  en: {
+    breadcrumb: {
+      home: "Home",
+      tours: "Tours",
+    },
+    hero: {
+      duration: "Duration",
+      day: "Day",
+      days: "Days",
+      hour: "Hour",
+      hours: "Hours",
+      rating: "Rating",
+      reviews: "reviews",
+      location: "Location",
+    },
+    booking: {
+      title: "Book Your Experience",
+      priceFrom: "From",
+      perPerson: "per person",
+      originalPrice: "Original price",
+      selectDate: "Select date",
+      travelers: "Travelers",
+      adults: "Adults",
+      children: "Children",
+      addToCart: "Add to Cart",
+      bookNow: "Book Now",
+      instantConfirmation: "Instant confirmation",
+      freeCancellation: "Free cancellation",
+      bestPrice: "Best price guaranteed",
+    },
+    sections: {
+      overview: "Overview",
+      itinerary: "Itinerary",
+      included: "Included",
+      excluded: "Not Included",
+      preparation: "What to Bring",
+      policies: "Policies",
+    },
+    overview: {
+      highlights: "Highlights",
+      difficulty: "Difficulty",
+      difficultyLevels: {
+        easy: "Easy",
+        medium: "Moderate",
+        hard: "Challenging",
+      },
+      minAge: "Minimum age",
+      years: "years",
+      capacity: "Capacity",
+      people: "people",
+      meetingPoint: "Meeting point",
+      startTime: "Start time",
+      languages: "Languages",
+    },
+    itinerary: {
+      dayLabel: "Day",
+      activities: "Activities",
+      meals: {
+        breakfast: "Breakfast",
+        lunch: "Lunch",
+        dinner: "Dinner",
+      },
+      hotelNight: "Hotel night",
+    },
+    policies: {
+      cancellation: "Cancellation policy",
+      refund: "Refund policy",
+      changes: "Change policy",
+    },
+    cta: {
+      title: "Have Questions?",
+      description: "Our team is available 24/7 to help you plan your perfect adventure.",
+      button: "Contact Now",
+    },
+    cart: {
+      added: "Added to cart",
+      viewCart: "View Cart",
+      continueShopping: "Continue Shopping",
+    },
+  },
+  fr: {
+    breadcrumb: {
+      home: "Accueil",
+      tours: "Tours",
+    },
+    hero: {
+      duration: "Durée",
+      day: "Jour",
+      days: "Jours",
+      hour: "Heure",
+      hours: "Heures",
+      rating: "Note",
+      reviews: "avis",
+      location: "Lieu",
+    },
+    booking: {
+      title: "Réservez Votre Expérience",
+      priceFrom: "À partir de",
+      perPerson: "par personne",
+      originalPrice: "Prix original",
+      selectDate: "Sélectionner la date",
+      travelers: "Voyageurs",
+      adults: "Adultes",
+      children: "Enfants",
+      addToCart: "Ajouter au Panier",
+      bookNow: "Réserver Maintenant",
+      instantConfirmation: "Confirmation instantanée",
+      freeCancellation: "Annulation gratuite",
+      bestPrice: "Meilleur prix garanti",
+    },
+    sections: {
+      overview: "Aperçu",
+      itinerary: "Itinéraire",
+      included: "Inclus",
+      excluded: "Non Inclus",
+      preparation: "Quoi Apporter",
+      policies: "Politiques",
+    },
+    overview: {
+      highlights: "Points forts",
+      difficulty: "Difficulté",
+      difficultyLevels: {
+        easy: "Facile",
+        medium: "Modéré",
+        hard: "Difficile",
+      },
+      minAge: "Âge minimum",
+      years: "ans",
+      capacity: "Capacité",
+      people: "personnes",
+      meetingPoint: "Point de rencontre",
+      startTime: "Heure de départ",
+      languages: "Langues",
+    },
+    itinerary: {
+      dayLabel: "Jour",
+      activities: "Activités",
+      meals: {
+        breakfast: "Petit-déjeuner",
+        lunch: "Déjeuner",
+        dinner: "Dîner",
+      },
+      hotelNight: "Nuit à l'hôtel",
+    },
+    policies: {
+      cancellation: "Politique d'annulation",
+      refund: "Politique de remboursement",
+      changes: "Politique de modification",
+    },
+    cta: {
+      title: "Des Questions?",
+      description: "Notre équipe est disponible 24/7 pour vous aider à planifier votre aventure parfaite.",
+      button: "Contacter Maintenant",
+    },
+    cart: {
+      added: "Ajouté au panier",
+      viewCart: "Voir le Panier",
+      continueShopping: "Continuer les Achats",
+    },
+  },
+  it: {
+    breadcrumb: {
+      home: "Home",
+      tours: "Tour",
+    },
+    hero: {
+      duration: "Durata",
+      day: "Giorno",
+      days: "Giorni",
+      hour: "Ora",
+      hours: "Ore",
+      rating: "Valutazione",
+      reviews: "recensioni",
+      location: "Posizione",
+    },
+    booking: {
+      title: "Prenota la Tua Esperienza",
+      priceFrom: "Da",
+      perPerson: "a persona",
+      originalPrice: "Prezzo originale",
+      selectDate: "Seleziona data",
+      travelers: "Viaggiatori",
+      adults: "Adulti",
+      children: "Bambini",
+      addToCart: "Aggiungi al Carrello",
+      bookNow: "Prenota Ora",
+      instantConfirmation: "Conferma istantanea",
+      freeCancellation: "Cancellazione gratuita",
+      bestPrice: "Miglior prezzo garantito",
+    },
+    sections: {
+      overview: "Panoramica",
+      itinerary: "Itinerario",
+      included: "Incluso",
+      excluded: "Non Incluso",
+      preparation: "Cosa Portare",
+      policies: "Politiche",
+    },
+    overview: {
+      highlights: "Punti salienti",
+      difficulty: "Difficoltà",
+      difficultyLevels: {
+        easy: "Facile",
+        medium: "Moderato",
+        hard: "Impegnativo",
+      },
+      minAge: "Età minima",
+      years: "anni",
+      capacity: "Capacità",
+      people: "persone",
+      meetingPoint: "Punto d'incontro",
+      startTime: "Ora di partenza",
+      languages: "Lingue",
+    },
+    itinerary: {
+      dayLabel: "Giorno",
+      activities: "Attività",
+      meals: {
+        breakfast: "Colazione",
+        lunch: "Pranzo",
+        dinner: "Cena",
+      },
+      hotelNight: "Notte in hotel",
+    },
+    policies: {
+      cancellation: "Politica di cancellazione",
+      refund: "Politica di rimborso",
+      changes: "Politica di modifica",
+    },
+    cta: {
+      title: "Hai Domande?",
+      description: "Il nostro team è disponibile 24/7 per aiutarti a pianificare la tua avventura perfetta.",
+      button: "Contatta Ora",
+    },
+    cart: {
+      added: "Aggiunto al carrello",
+      viewCart: "Vedi Carrello",
+      continueShopping: "Continua lo Shopping",
+    },
+  },
+  de: {
+    breadcrumb: {
+      home: "Startseite",
+      tours: "Touren",
+    },
+    hero: {
+      duration: "Dauer",
+      day: "Tag",
+      days: "Tage",
+      hour: "Stunde",
+      hours: "Stunden",
+      rating: "Bewertung",
+      reviews: "Bewertungen",
+      location: "Standort",
+    },
+    booking: {
+      title: "Buchen Sie Ihr Erlebnis",
+      priceFrom: "Ab",
+      perPerson: "pro Person",
+      originalPrice: "Originalpreis",
+      selectDate: "Datum wählen",
+      travelers: "Reisende",
+      adults: "Erwachsene",
+      children: "Kinder",
+      addToCart: "In den Warenkorb",
+      bookNow: "Jetzt Buchen",
+      instantConfirmation: "Sofortige Bestätigung",
+      freeCancellation: "Kostenlose Stornierung",
+      bestPrice: "Bestpreisgarantie",
+    },
+    sections: {
+      overview: "Überblick",
+      itinerary: "Reiseverlauf",
+      included: "Inklusiv",
+      excluded: "Nicht Inklusiv",
+      preparation: "Was Mitbringen",
+      policies: "Richtlinien",
+    },
+    overview: {
+      highlights: "Höhepunkte",
+      difficulty: "Schwierigkeit",
+      difficultyLevels: {
+        easy: "Leicht",
+        medium: "Mittel",
+        hard: "Anspruchsvoll",
+      },
+      minAge: "Mindestalter",
+      years: "Jahre",
+      capacity: "Kapazität",
+      people: "Personen",
+      meetingPoint: "Treffpunkt",
+      startTime: "Startzeit",
+      languages: "Sprachen",
+    },
+    itinerary: {
+      dayLabel: "Tag",
+      activities: "Aktivitäten",
+      meals: {
+        breakfast: "Frühstück",
+        lunch: "Mittagessen",
+        dinner: "Abendessen",
+      },
+      hotelNight: "Hotelnacht",
+    },
+    policies: {
+      cancellation: "Stornierungsrichtlinie",
+      refund: "Rückerstattungsrichtlinie",
+      changes: "Änderungsrichtlinie",
+    },
+    cta: {
+      title: "Haben Sie Fragen?",
+      description:
+        "Unser Team ist rund um die Uhr verfügbar, um Ihnen bei der Planung Ihres perfekten Abenteuers zu helfen.",
+      button: "Jetzt Kontaktieren",
+    },
+    cart: {
+      added: "Zum Warenkorb hinzugefügt",
+      viewCart: "Warenkorb Anzeigen",
+      continueShopping: "Weiter Einkaufen",
+    },
+  },
+  pt: {
+    breadcrumb: {
+      home: "Início",
+      tours: "Passeios",
+    },
+    hero: {
+      duration: "Duração",
+      day: "Dia",
+      days: "Dias",
+      hour: "Hora",
+      hours: "Horas",
+      rating: "Avaliação",
+      reviews: "avaliações",
+      location: "Localização",
+    },
+    booking: {
+      title: "Reserve Sua Experiência",
+      priceFrom: "A partir de",
+      perPerson: "por pessoa",
+      originalPrice: "Preço original",
+      selectDate: "Selecionar data",
+      travelers: "Viajantes",
+      adults: "Adultos",
+      children: "Crianças",
+      addToCart: "Adicionar ao Carrinho",
+      bookNow: "Reservar Agora",
+      instantConfirmation: "Confirmação instantânea",
+      freeCancellation: "Cancelamento gratuito",
+      bestPrice: "Melhor preço garantido",
+    },
+    sections: {
+      overview: "Visão Geral",
+      itinerary: "Itinerário",
+      included: "Incluído",
+      excluded: "Não Incluído",
+      preparation: "O Que Levar",
+      policies: "Políticas",
+    },
+    overview: {
+      highlights: "Destaques",
+      difficulty: "Dificuldade",
+      difficultyLevels: {
+        easy: "Fácil",
+        medium: "Moderado",
+        hard: "Desafiador",
+      },
+      minAge: "Idade mínima",
+      years: "anos",
+      capacity: "Capacidade",
+      people: "pessoas",
+      meetingPoint: "Ponto de encontro",
+      startTime: "Horário de início",
+      languages: "Idiomas",
+    },
+    itinerary: {
+      dayLabel: "Dia",
+      activities: "Atividades",
+      meals: {
+        breakfast: "Café da manhã",
+        lunch: "Almoço",
+        dinner: "Jantar",
+      },
+      hotelNight: "Noite no hotel",
+    },
+    policies: {
+      cancellation: "Política de cancelamento",
+      refund: "Política de reembolso",
+      changes: "Política de alterações",
+    },
+    cta: {
+      title: "Tem Perguntas?",
+      description: "Nossa equipe está disponível 24/7 para ajudá-lo a planejar sua aventura perfeita.",
+      button: "Contatar Agora",
+    },
+    cart: {
+      added: "Adicionado ao carrinho",
+      viewCart: "Ver Carrinho",
+      continueShopping: "Continuar Comprando",
+    },
+  },
+  zh: {
+    breadcrumb: {
+      home: "首页",
+      tours: "旅游",
+    },
+    hero: {
+      duration: "时长",
+      day: "天",
+      days: "天",
+      hour: "小时",
+      hours: "小时",
+      rating: "评分",
+      reviews: "条评价",
+      location: "位置",
+    },
+    booking: {
+      title: "预订您的体验",
+      priceFrom: "起价",
+      perPerson: "每人",
+      originalPrice: "原价",
+      selectDate: "选择日期",
+      travelers: "旅行者",
+      adults: "成人",
+      children: "儿童",
+      addToCart: "加入购物车",
+      bookNow: "立即预订",
+      instantConfirmation: "即时确认",
+      freeCancellation: "免费取消",
+      bestPrice: "最优价格保证",
+    },
+    sections: {
+      overview: "概述",
+      itinerary: "行程",
+      included: "包含",
+      excluded: "不包含",
+      preparation: "携带物品",
+      policies: "政策",
+    },
+    overview: {
+      highlights: "亮点",
+      difficulty: "难度",
+      difficultyLevels: {
+        easy: "简单",
+        medium: "中等",
+        hard: "困难",
+      },
+      minAge: "最低年龄",
+      years: "岁",
+      capacity: "容量",
+      people: "人",
+      meetingPoint: "集合地点",
+      startTime: "开始时间",
+      languages: "语言",
+    },
+    itinerary: {
+      dayLabel: "第",
+      activities: "活动",
+      meals: {
+        breakfast: "早餐",
+        lunch: "午餐",
+        dinner: "晚餐",
+      },
+      hotelNight: "酒店住宿",
+    },
+    policies: {
+      cancellation: "取消政策",
+      refund: "退款政策",
+      changes: "更改政策",
+    },
+    cta: {
+      title: "有问题吗？",
+      description: "我们的团队全天候为您提供帮助，帮您规划完美的冒险。",
+      button: "立即联系",
+    },
+    cart: {
+      added: "已加入购物车",
+      viewCart: "查看购物车",
+      continueShopping: "继续购物",
+    },
+  },
+  ja: {
+    breadcrumb: {
+      home: "ホーム",
+      tours: "ツアー",
+    },
+    hero: {
+      duration: "所要時間",
+      day: "日",
+      days: "日",
+      hour: "時間",
+      hours: "時間",
+      rating: "評価",
+      reviews: "件のレビュー",
+      location: "場所",
+    },
+    booking: {
+      title: "体験を予約",
+      priceFrom: "から",
+      perPerson: "一人あたり",
+      originalPrice: "元の価格",
+      selectDate: "日付を選択",
+      travelers: "旅行者",
+      adults: "大人",
+      children: "子供",
+      addToCart: "カートに追加",
+      bookNow: "今すぐ予約",
+      instantConfirmation: "即時確認",
+      freeCancellation: "無料キャンセル",
+      bestPrice: "最低価格保証",
+    },
+    sections: {
+      overview: "概要",
+      itinerary: "旅程",
+      included: "含まれるもの",
+      excluded: "含まれないもの",
+      preparation: "持ち物",
+      policies: "ポリシー",
+    },
+    overview: {
+      highlights: "ハイライト",
+      difficulty: "難易度",
+      difficultyLevels: {
+        easy: "簡単",
+        medium: "中程度",
+        hard: "ハード",
+      },
+      minAge: "最低年齢",
+      years: "歳",
+      capacity: "定員",
+      people: "名",
+      meetingPoint: "集合場所",
+      startTime: "開始時間",
+      languages: "言語",
+    },
+    itinerary: {
+      dayLabel: "日目",
+      activities: "アクティビティ",
+      meals: {
+        breakfast: "朝食",
+        lunch: "昼食",
+        dinner: "夕食",
+      },
+      hotelNight: "ホテル泊",
+    },
+    policies: {
+      cancellation: "キャンセルポリシー",
+      refund: "返金ポリシー",
+      changes: "変更ポリシー",
+    },
+    cta: {
+      title: "ご質問がありますか？",
+      description: "私たちのチームは24時間年中無休で、完璧な冒険の計画をお手伝いします。",
+      button: "今すぐお問い合わせ",
+    },
+    cart: {
+      added: "カートに追加しました",
+      viewCart: "カートを見る",
+      continueShopping: "買い物を続ける",
+    },
+  },
+  ru: {
+    breadcrumb: {
+      home: "Главная",
+      tours: "Туры",
+    },
+    hero: {
+      duration: "Продолжительность",
+      day: "День",
+      days: "Дней",
+      hour: "Час",
+      hours: "Часов",
+      rating: "Рейтинг",
+      reviews: "отзывов",
+      location: "Место",
+    },
+    booking: {
+      title: "Забронируйте Впечатление",
+      priceFrom: "От",
+      perPerson: "с человека",
+      originalPrice: "Первоначальная цена",
+      selectDate: "Выбрать дату",
+      travelers: "Путешественники",
+      adults: "Взрослые",
+      children: "Дети",
+      addToCart: "В Корзину",
+      bookNow: "Забронировать",
+      instantConfirmation: "Мгновенное подтверждение",
+      freeCancellation: "Бесплатная отмена",
+      bestPrice: "Гарантия лучшей цены",
+    },
+    sections: {
+      overview: "Обзор",
+      itinerary: "Маршрут",
+      included: "Включено",
+      excluded: "Не Включено",
+      preparation: "Что Взять",
+      policies: "Политики",
+    },
+    overview: {
+      highlights: "Особенности",
+      difficulty: "Сложность",
+      difficultyLevels: {
+        easy: "Легко",
+        medium: "Средне",
+        hard: "Сложно",
+      },
+      minAge: "Минимальный возраст",
+      years: "лет",
+      capacity: "Вместимость",
+      people: "человек",
+      meetingPoint: "Место встречи",
+      startTime: "Время начала",
+      languages: "Языки",
+    },
+    itinerary: {
+      dayLabel: "День",
+      activities: "Активности",
+      meals: {
+        breakfast: "Завтрак",
+        lunch: "Обед",
+        dinner: "Ужин",
+      },
+      hotelNight: "Ночь в отеле",
+    },
+    policies: {
+      cancellation: "Политика отмены",
+      refund: "Политика возврата",
+      changes: "Политика изменений",
+    },
+    cta: {
+      title: "Есть Вопросы?",
+      description: "Наша команда доступна 24/7, чтобы помочь вам спланировать идеальное приключение.",
+      button: "Связаться Сейчас",
+    },
+    cart: {
+      added: "Добавлено в корзину",
+      viewCart: "Посмотреть Корзину",
+      continueShopping: "Продолжить Покупки",
+    },
+  },
+}
+
+export function getTourDetailDictionary(locale: Locale): TourDetailDictionary {
+  return tourDetailDictionaries[locale]
+}

@@ -26,7 +26,7 @@ export function isValidLanguageCode(code: string): code is SupportedLanguageCode
 }
 
 // Fetcher para tours paginados
-const fetchTours = async ([, page, limit, lang]: [string, number, number, string | undefined]) =>
+const fetchTours = async ([, page, limit, lang]: [string, number, number, string?]) =>
   toursService.getTours(page, limit, lang)
 
 // ➤ Hook: Obtener tours paginados
@@ -47,11 +47,7 @@ export function useTour(id: string | null, lang?: string) {
 
 // ➤ Hook: Obtener tours populares (DEVUELVE 4)
 export function usePopularTours(lang?: string) {
-  return useSWR(
-    [POPULAR_TOURS_KEY, lang],
-    async () => toursService.getPopularTours(lang),
-    { revalidateOnFocus: false },
-  )
+  return useSWR([POPULAR_TOURS_KEY, lang], async () => toursService.getPopularTours(lang), { revalidateOnFocus: false })
 }
 
 // ➤ Revalidación global
@@ -71,26 +67,20 @@ export function useCreateTour() {
 
 // ➤ Actualizar tour
 export function useUpdateTour() {
-  return useSWRMutation(
-    "updateTour",
-    async (_, { arg }: { arg: { id: string; data: UpdateTourDto } }) => {
-      const result = await toursService.updateTour(arg.id, arg.data)
-      revalidateTours()
-      return result
-    },
-  )
+  return useSWRMutation("updateTour", async (_, { arg }: { arg: { id: string; data: UpdateTourDto } }) => {
+    const result = await toursService.updateTour(arg.id, arg.data)
+    revalidateTours()
+    return result
+  })
 }
 
 // ➤ Eliminar tour
 export function useDeleteTour() {
-  return useSWRMutation(
-    "deleteTour",
-    async (_, { arg }: { arg: string }) => {
-      const result = await toursService.deleteTour(arg)
-      revalidateTours()
-      return result
-    },
-  )
+  return useSWRMutation("deleteTour", async (_, { arg }: { arg: string }) => {
+    const result = await toursService.deleteTour(arg)
+    revalidateTours()
+    return result
+  })
 }
 
 // ➤ Auto traducir tour
@@ -111,10 +101,7 @@ export function useAutoTranslateTour() {
 export function useUpdateTourTranslation() {
   return useSWRMutation(
     "updateTourTranslation",
-    async (
-      _,
-      { arg }: { arg: { id: string; lang: SupportedLanguageCode; data: UpdateTourTranslationDto } },
-    ) => {
+    async (_, { arg }: { arg: { id: string; lang: SupportedLanguageCode; data: UpdateTourTranslationDto } }) => {
       const result = await toursService.updateTourTranslation(arg.id, arg.lang, arg.data)
       revalidateTours()
       return result

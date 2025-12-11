@@ -1,17 +1,11 @@
 import { api } from "@/lib/api"
-import type {
-  Tour,
-  CreateTourDto,
-  UpdateTourDto,
-  UpdateTourTranslationDto,
-  PaginatedResponse,
-} from "@/types/tour"
+import type { Tour, CreateTourDto, UpdateTourDto, UpdateTourTranslationDto, PaginatedResponse } from "@/types/tour"
 
 export const toursService = {
-  // GET /tours?page=X&limit=Y&lang=XX
+  // GET /tours?lang=XX&page=X&limit=Y
   async getTours(page = 1, limit = 10, lang?: string) {
     const response = await api.get<PaginatedResponse<Tour>>("/tours", {
-      params: { page, limit, ...(lang && { lang }) },
+      params: { lang, page, limit },
     })
     return response.data
   },
