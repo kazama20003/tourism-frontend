@@ -55,7 +55,7 @@ function TransportCard({
   }, [])
 
   const vehicleData = typeof transport.vehicle === "object" ? transport.vehicle : null
-  const imageUrl = transport.images?.[0]?.url || "/peru-transport-bus.jpg"
+  const imageUrl = transport.images?.[0]?.url || "/placeholder.svg"
 
   const formatDuration = () => {
     const parts = []
@@ -66,7 +66,7 @@ function TransportCard({
 
   return (
     <div ref={cardRef} className="group opacity-0">
-      <div className="relative aspect-3/4 overflow-hidden bg-muted mb-4">
+      <div className="relative aspect-[3/4] overflow-hidden bg-muted mb-4">
         <Image
           src={imageUrl || "/placeholder.svg"}
           alt={transport.title}
@@ -203,13 +203,12 @@ export default function TransportsPage({ params }: { params: Promise<{ locale: s
     return () => ctx.revert()
   }, [])
 
-  const filteredTransports = transports.filter((transport: Transport) => {
+  const filteredTransports = transports.filter((_transport) => {
     return activeCategory === "all" || true
   })
 
   return (
     <main className="min-h-screen bg-background">
-
       {/* Hero Section */}
       <section ref={heroRef} className="relative h-[80vh] overflow-hidden">
         <div ref={heroVideoRef} className="absolute inset-0">

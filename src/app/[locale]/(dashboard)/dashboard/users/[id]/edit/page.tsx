@@ -21,6 +21,7 @@ export default function EditUserPage() {
 
   const { data: user, isLoading } = useUser(userId)
   const updateUserMutation = useUpdateUser()
+
   const [formData, setFormData] = useState<UpdateUserDto>({
     firstName: "",
     lastName: "",
@@ -51,18 +52,15 @@ export default function EditUserPage() {
       return
     }
 
-    updateUserMutation.mutate(
-      { id: userId, data: formData },
-      {
-        onSuccess: () => {
-          toast.success("Usuario actualizado correctamente")
-          router.push("/dashboard/users")
-        },
-        onError: () => {
-          toast.error("Error al actualizar el usuario")
-        },
-      },
-    )
+    updateUserMutation
+      .trigger({ id: userId, data: formData })
+      .then(() => {
+        toast.success("Usuario actualizado correctamente")
+        router.push("/dashboard/users")
+      })
+      .catch(() => {
+        toast.error("Error al actualizar el usuario")
+      })
   }
 
   if (isLoading) {
@@ -210,12 +208,12 @@ export default function EditUserPage() {
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                disabled={updateUserMutation.isPending}
+                disabled={updateUserMutation.isMutating}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={updateUserMutation.isPending}>
-                {updateUserMutation.isPending ? (
+              <Button type="submit" disabled={updateUserMutation.isMutating}>
+                {updateUserMutation.isMutating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Guardando...

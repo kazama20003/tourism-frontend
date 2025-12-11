@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
+import Image from "next/image"
+import Link from "next/link"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { Search, ArrowRight, Clock, Wine, Star } from "lucide-react"
@@ -15,7 +17,7 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger)
 }
 
-function TourCard({ tour, index, dict }: { tour: Tour; index: number; dict: ToursDictionary }) {
+function TourCard({ tour, index, dict, locale }: { tour: Tour; index: number; dict: ToursDictionary; locale: Locale }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -94,7 +96,7 @@ function TourCard({ tour, index, dict }: { tour: Tour; index: number; dict: Tour
     <div ref={cardRef} className="group opacity-0 py-6">
       <div className={`flex flex-col lg:flex-row ${isEven ? "" : "lg:flex-row-reverse"}`}>
         {/* Image/Video Section */}
-        <div ref={imageRef} className="relative w-full lg:w-1/2 aspect-[4/3] overflow-hidden">
+        <div ref={imageRef} className="relative w-full lg:w-1/2 aspect-4/3 overflow-hidden">
           {showVideo ? (
             <video
               src={tour.videoUrl}
@@ -105,14 +107,16 @@ function TourCard({ tour, index, dict }: { tour: Tour; index: number; dict: Tour
               playsInline
             />
           ) : (
-            <img
+            <Image
               src={displayImage || "/placeholder.svg"}
               alt={tour.title}
-              className="absolute inset-0 w-full h-full object-cover object-center"
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 1024px) 100vw, 50vw"
             />
           )}
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
 
           {isFeatured && (
             <div className="absolute top-6 left-6 flex items-center gap-2 bg-accent text-accent-foreground px-4 py-2 text-xs font-medium tracking-widest uppercase">
@@ -182,9 +186,12 @@ function TourCard({ tour, index, dict }: { tour: Tour; index: number; dict: Tour
                 <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
               </button>
 
-              <button className="inline-flex items-center gap-3 px-6 py-3 border border-foreground/20 text-foreground text-xs font-medium tracking-widest uppercase hover:bg-foreground hover:text-background transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <Link
+                href={`/${locale}/tours/${tour.slug}`}
+                className="inline-flex items-center gap-3 px-6 py-3 border border-foreground/20 text-foreground text-xs font-medium tracking-widest uppercase hover:bg-foreground hover:text-background transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
                 {dict.card.viewDetails}
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -198,7 +205,7 @@ function TourCardSkeleton({ index }: { index: number }) {
   return (
     <div className="py-6">
       <div className={`flex flex-col lg:flex-row ${isEven ? "" : "lg:flex-row-reverse"}`}>
-        <Skeleton className="w-full lg:w-1/2 aspect-[4/3]" />
+        <Skeleton className="w-full lg:w-1/2 aspect-4/3" />
         <div className="w-full lg:w-1/2 p-6 lg:p-8 xl:p-10 bg-secondary space-y-4">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-10 w-3/4" />
@@ -440,7 +447,7 @@ export default function ToursPage() {
           {!isLoading && !error && filteredTours.length > 0 && (
             <div className="divide-y divide-foreground/10">
               {filteredTours.map((tour, index) => (
-                <TourCard key={tour._id} tour={tour} index={index} dict={dict} />
+                <TourCard key={tour._id} tour={tour} index={index} dict={dict} locale={locale} />
               ))}
             </div>
           )}
@@ -475,11 +482,11 @@ export default function ToursPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 md:py-24 px-4 bg-primary text-primary-foreground">
+      <section className="py-16 md:py-24 px-4 bg-foreground">
         <div ref={ctaRef} className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-serif mb-6">{dict.cta.title}</h2>
-          <p className="text-primary-foreground/70 mb-8 max-w-xl mx-auto">{dict.cta.description}</p>
-          <button className="inline-flex items-center gap-3 px-10 py-5 bg-accent text-accent-foreground text-xs font-medium tracking-widest uppercase hover:bg-accent/90 transition-colors">
+          <h2 className="text-4xl md:text-5xl font-serif mb-6 text-background">{dict.cta.title}</h2>
+          <p className="text-background/70 mb-8 max-w-xl mx-auto">{dict.cta.description}</p>
+          <button className="inline-flex items-center gap-3 px-10 py-5 bg-background text-foreground text-xs font-medium tracking-widest uppercase hover:bg-background/90 transition-colors">
             {dict.cta.button}
             <ArrowRight className="w-4 h-4" />
           </button>

@@ -1,62 +1,202 @@
-export interface CloudinaryImageDto {
+export const DifficultyValues = ["easy", "medium", "hard"] as const
+export type Difficulty = (typeof DifficultyValues)[number]
+
+export const AvailabilityTypeValues = ["unlimited", "fixed_dates", "date_range"] as const
+export type AvailabilityType = (typeof AvailabilityTypeValues)[number]
+
+export interface TourImage {
   url: string
-  secure_url: string
-  public_id: string
+  publicId: string
+  _id?: string
 }
 
-export interface CoordinatesDto {
-  latitude: number
-  longitude: number
+export interface TourMeals {
+  breakfast: boolean
+  lunch: boolean
+  dinner: boolean
 }
 
-export interface ItineraryItem {
+export interface TourItineraryItem {
   order: number
   title: string
   description: string
   durationHours?: number
   images?: string[]
   activities?: string[]
-  meals?: {
-    breakfast: boolean
-    lunch: boolean
-    dinner: boolean
-  }
+  meals?: TourMeals
   hotelNight?: boolean
+  _id?: string
 }
 
-export interface Discount {
+export interface TourTranslation {
+  lang: string
+  title?: string
+  description?: string
+  slug?: string
+  meetingPoint?: string
+  metaDescription?: string
+  includes?: string[]
+  excludes?: string[]
+  categories?: string[]
+  itinerary?: {
+    order: number
+    title?: string
+    description?: string
+  }[]
+  _id?: string
+}
+
+export interface TourDiscount {
   people: number
   discount: number
 }
 
-export type Difficulty = "easy" | "medium" | "hard"
-export type AvailabilityType = "unlimited" | "fixed_dates" | "date_range"
+export interface TourCoordinates {
+  lat: number
+  lng: number
+}
 
 export interface Tour {
   _id: string
+  // Base content (Spanish)
   title: string
   description: string
-  images?: CloudinaryImageDto[]
+  slug: string
+  metaDescription?: string
+
+  // Media
+  images: TourImage[]
   videoUrl?: string
+
+  // Location
   locationName: string
-  coordinates?: CoordinatesDto
+  coordinates?: TourCoordinates
+
+  // Duration
   durationDays: number
   durationHours?: number
-  difficulty?: Difficulty
+
+  // Difficulty & Requirements
+  difficulty: Difficulty
   minAge?: number
   capacity?: number
+
+  // Meeting Info
   meetingPoint?: string
   startTime?: string
   endTime?: string
+
+  // Benefits & Preparations (Spanish base)
   benefits?: string[]
   preparations?: string[]
-  itinerary?: ItineraryItem[]
-  hasTransport?: boolean
+
+  // Itinerary (Spanish base)
+  itinerary: TourItineraryItem[]
+
+  // Translations
+  translations: TourTranslation[]
+
+  // Transport
+  hasTransport: boolean
   vehicleIds?: string[]
-  hasGuide?: boolean
+
+  // Guide
+  hasGuide: boolean
+
+  // Pricing
   currentPrice: number
   oldPrice?: number
-  discounts?: Discount[]
+  discounts?: TourDiscount[]
+
+  // Availability & Booking Rules
+  availabilityType: AvailabilityType
+  startDate?: string
+  endDate?: string
+  availableDates: string[]
+  limitCapacity?: boolean
+  minPeoplePerBooking?: number
+  maxPeoplePerBooking?: number
+  cutoffHoursBeforeStart?: number
+  instantConfirmation?: boolean
+  isBookable?: boolean
+
+  // Content arrays (Spanish base)
+  includes: string[]
+  excludes: string[]
+  categories: string[]
+
+  // Languages available for this tour
+  languages: string[]
+
+  // Ratings
+  rating: number
+  reviewsCount: number
+
+  // Policies
+  cancellationPolicy?: string
+  refundPolicy?: string
+  changePolicy?: string
+
+  // Status
+  isActive: boolean
+
+  // Timestamps
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface CreateTourDto {
+  // Required fields
+  title: string
+  description: string
+  locationName: string
+  currentPrice: number
+  durationDays: number
+  slug: string
+
+  // Optional fields
+  oldPrice?: number
+  durationHours?: number
+  images?: TourImage[]
+  videoUrl?: string
+  coordinates?: TourCoordinates
+
+  // Difficulty & Requirements
+  difficulty?: Difficulty
+  minAge?: number
+  capacity?: number
+
+  // Meeting Info
+  meetingPoint?: string
+  startTime?: string
+  endTime?: string
+
+  // Benefits & Preparations
+  benefits?: string[]
+  preparations?: string[]
+
+  // Itinerary
+  itinerary?: TourItineraryItem[]
+
+  // Transport
+  hasTransport?: boolean
+  vehicleIds?: string[]
+
+  // Guide
+  hasGuide?: boolean
+
+  // Pricing
+  discounts?: TourDiscount[]
+
+  // Availability & Booking Rules
   availabilityType?: AvailabilityType
   startDate?: string
   endDate?: string
@@ -67,31 +207,32 @@ export interface Tour {
   cutoffHoursBeforeStart?: number
   instantConfirmation?: boolean
   isBookable?: boolean
+
+  // Content arrays
   includes?: string[]
   excludes?: string[]
   categories?: string[]
+
+  // Languages
   languages?: string[]
+
+  // Ratings (usually set by system, but can be initialized)
   rating?: number
   reviewsCount?: number
+
+  // Policies
   cancellationPolicy?: string
   refundPolicy?: string
   changePolicy?: string
-  isActive?: boolean
-  slug: string
-  metaDescription?: string
-  createdAt?: string
-  updatedAt?: string
-}
 
-export type CreateTourDto = Omit<Tour, "_id" | "createdAt" | "updatedAt">
+  // Status
+  isActive?: boolean
+
+  // Meta
+  metaDescription?: string
+}
 
 export type UpdateTourDto = Partial<CreateTourDto>
-
-export interface UpdateTranslationItineraryItemDto {
-  order: number
-  title?: string
-  description?: string
-}
 
 export interface UpdateTourTranslationDto {
   title?: string
@@ -102,13 +243,9 @@ export interface UpdateTourTranslationDto {
   includes?: string[]
   excludes?: string[]
   categories?: string[]
-  itinerary?: UpdateTranslationItineraryItemDto[]
-}
-
-export interface PaginatedResponse<T> {
-  data: T[]
-  page: number
-  limit: number
-  total: number
-  totalPages: number
+  itinerary?: {
+    order: number
+    title?: string
+    description?: string
+  }[]
 }

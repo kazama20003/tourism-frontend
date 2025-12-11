@@ -36,6 +36,15 @@ export function useTours(page = 1, limit = 10, lang?: string) {
   })
 }
 
+// ➤ Hook: Obtener 1 tour por slug
+export function useTourBySlug(slug: string | null, lang?: string) {
+  return useSWR(
+    slug ? ["tour-slug", slug, lang] : null,
+    async ([, tourSlug, language]: [string, string, string?]) => toursService.getTourBySlug(tourSlug, language),
+    { revalidateOnFocus: false },
+  )
+}
+
 // ➤ Hook: Obtener 1 tour
 export function useTour(id: string | null, lang?: string) {
   return useSWR(

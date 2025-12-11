@@ -29,6 +29,12 @@ export interface TourDetailDictionary {
     instantConfirmation: string
     freeCancellation: string
     bestPrice: string
+    availableDates: string
+    bookingInfo: string
+    minPeople: string
+    maxPeople: string
+    cutoff: string
+    before: string
   }
   sections: {
     overview: string
@@ -37,6 +43,7 @@ export interface TourDetailDictionary {
     excluded: string
     preparation: string
     policies: string
+    noInfo: string
   }
   overview: {
     highlights: string
@@ -53,6 +60,7 @@ export interface TourDetailDictionary {
     meetingPoint: string
     startTime: string
     languages: string
+    included: string
   }
   itinerary: {
     dayLabel: string
@@ -68,6 +76,7 @@ export interface TourDetailDictionary {
     cancellation: string
     refund: string
     changes: string
+    contactUs: string
   }
   cta: {
     title: string
@@ -111,6 +120,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "Confirmación instantánea",
       freeCancellation: "Cancelación gratuita",
       bestPrice: "Mejor precio garantizado",
+      availableDates: "Fechas Disponibles",
+      bookingInfo: "Información de Reserva",
+      minPeople: "Mínimo de personas",
+      maxPeople: "Máximo de personas",
+      cutoff: "Límite de reserva",
+      before: "antes del inicio",
     },
     sections: {
       overview: "Descripción",
@@ -119,6 +134,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "No Incluye",
       preparation: "Qué Llevar",
       policies: "Políticas",
+      noInfo: "No hay información disponible",
     },
     overview: {
       highlights: "Destacados",
@@ -135,6 +151,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "Punto de encuentro",
       startTime: "Hora de inicio",
       languages: "Idiomas",
+      included: "Incluido",
     },
     itinerary: {
       dayLabel: "Día",
@@ -150,6 +167,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "Política de cancelación",
       refund: "Política de reembolso",
       changes: "Política de cambios",
+      contactUs: "Contáctanos para más información sobre políticas",
     },
     cta: {
       title: "¿Tienes Preguntas?",
@@ -191,6 +209,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "Instant confirmation",
       freeCancellation: "Free cancellation",
       bestPrice: "Best price guaranteed",
+      availableDates: "Available Dates",
+      bookingInfo: "Booking Information",
+      minPeople: "Minimum people",
+      maxPeople: "Maximum people",
+      cutoff: "Booking cutoff",
+      before: "before start",
     },
     sections: {
       overview: "Overview",
@@ -199,6 +223,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "Not Included",
       preparation: "What to Bring",
       policies: "Policies",
+      noInfo: "No information available",
     },
     overview: {
       highlights: "Highlights",
@@ -215,6 +240,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "Meeting point",
       startTime: "Start time",
       languages: "Languages",
+      included: "Included",
     },
     itinerary: {
       dayLabel: "Day",
@@ -230,6 +256,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "Cancellation policy",
       refund: "Refund policy",
       changes: "Change policy",
+      contactUs: "Contact us for more information about policies",
     },
     cta: {
       title: "Have Questions?",
@@ -271,6 +298,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "Confirmation instantanée",
       freeCancellation: "Annulation gratuite",
       bestPrice: "Meilleur prix garanti",
+      availableDates: "Dates Disponibles",
+      bookingInfo: "Informations de Réservation",
+      minPeople: "Minimum de personnes",
+      maxPeople: "Maximum de personnes",
+      cutoff: "Limite de réservation",
+      before: "avant le départ",
     },
     sections: {
       overview: "Aperçu",
@@ -279,6 +312,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "Non Inclus",
       preparation: "Quoi Apporter",
       policies: "Politiques",
+      noInfo: "Aucune information disponible",
     },
     overview: {
       highlights: "Points forts",
@@ -295,6 +329,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "Point de rencontre",
       startTime: "Heure de départ",
       languages: "Langues",
+      included: "Inclus",
     },
     itinerary: {
       dayLabel: "Jour",
@@ -310,6 +345,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "Politique d'annulation",
       refund: "Politique de remboursement",
       changes: "Politique de modification",
+      contactUs: "Contactez-nous pour plus d'informations sur les politiques",
     },
     cta: {
       title: "Des Questions?",
@@ -351,6 +387,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "Conferma istantanea",
       freeCancellation: "Cancellazione gratuita",
       bestPrice: "Miglior prezzo garantito",
+      availableDates: "Date Disponibili",
+      bookingInfo: "Informazioni Prenotazione",
+      minPeople: "Minimo persone",
+      maxPeople: "Massimo persone",
+      cutoff: "Limite prenotazione",
+      before: "prima dell'inizio",
     },
     sections: {
       overview: "Panoramica",
@@ -359,6 +401,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "Non Incluso",
       preparation: "Cosa Portare",
       policies: "Politiche",
+      noInfo: "Nessuna informazione disponibile",
     },
     overview: {
       highlights: "Punti salienti",
@@ -375,6 +418,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "Punto d'incontro",
       startTime: "Ora di partenza",
       languages: "Lingue",
+      included: "Incluso",
     },
     itinerary: {
       dayLabel: "Giorno",
@@ -390,6 +434,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "Politica di cancellazione",
       refund: "Politica di rimborso",
       changes: "Politica di modifica",
+      contactUs: "Contattaci per maggiori informazioni sulle politiche",
     },
     cta: {
       title: "Hai Domande?",
@@ -431,6 +476,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "Sofortige Bestätigung",
       freeCancellation: "Kostenlose Stornierung",
       bestPrice: "Bestpreisgarantie",
+      availableDates: "Verfügbare Termine",
+      bookingInfo: "Buchungsinformationen",
+      minPeople: "Mindestpersonen",
+      maxPeople: "Maximalpersonen",
+      cutoff: "Buchungsfrist",
+      before: "vor Beginn",
     },
     sections: {
       overview: "Überblick",
@@ -439,6 +490,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "Nicht Inklusiv",
       preparation: "Was Mitbringen",
       policies: "Richtlinien",
+      noInfo: "Keine Informationen verfügbar",
     },
     overview: {
       highlights: "Höhepunkte",
@@ -455,6 +507,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "Treffpunkt",
       startTime: "Startzeit",
       languages: "Sprachen",
+      included: "Inklusive",
     },
     itinerary: {
       dayLabel: "Tag",
@@ -470,6 +523,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "Stornierungsrichtlinie",
       refund: "Rückerstattungsrichtlinie",
       changes: "Änderungsrichtlinie",
+      contactUs: "Kontaktieren Sie uns für weitere Informationen zu Richtlinien",
     },
     cta: {
       title: "Haben Sie Fragen?",
@@ -512,6 +566,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "Confirmação instantânea",
       freeCancellation: "Cancelamento gratuito",
       bestPrice: "Melhor preço garantido",
+      availableDates: "Datas Disponíveis",
+      bookingInfo: "Informações de Reserva",
+      minPeople: "Mínimo de pessoas",
+      maxPeople: "Máximo de pessoas",
+      cutoff: "Limite de reserva",
+      before: "antes do início",
     },
     sections: {
       overview: "Visão Geral",
@@ -520,6 +580,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "Não Incluído",
       preparation: "O Que Levar",
       policies: "Políticas",
+      noInfo: "Nenhuma informação disponível",
     },
     overview: {
       highlights: "Destaques",
@@ -536,6 +597,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "Ponto de encontro",
       startTime: "Horário de início",
       languages: "Idiomas",
+      included: "Incluído",
     },
     itinerary: {
       dayLabel: "Dia",
@@ -551,6 +613,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "Política de cancelamento",
       refund: "Política de reembolso",
       changes: "Política de alterações",
+      contactUs: "Entre em contato para mais informações sobre políticas",
     },
     cta: {
       title: "Tem Perguntas?",
@@ -592,6 +655,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "即时确认",
       freeCancellation: "免费取消",
       bestPrice: "最优价格保证",
+      availableDates: "可选日期",
+      bookingInfo: "预订信息",
+      minPeople: "最少人数",
+      maxPeople: "最多人数",
+      cutoff: "预订截止",
+      before: "开始前",
     },
     sections: {
       overview: "概述",
@@ -600,6 +669,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "不包含",
       preparation: "携带物品",
       policies: "政策",
+      noInfo: "暂无信息",
     },
     overview: {
       highlights: "亮点",
@@ -616,6 +686,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "集合地点",
       startTime: "开始时间",
       languages: "语言",
+      included: "包含",
     },
     itinerary: {
       dayLabel: "第",
@@ -631,6 +702,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "取消政策",
       refund: "退款政策",
       changes: "更改政策",
+      contactUs: "联系我们了解更多政策信息",
     },
     cta: {
       title: "有问题吗？",
@@ -672,6 +744,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "即時確認",
       freeCancellation: "無料キャンセル",
       bestPrice: "最低価格保証",
+      availableDates: "利用可能な日程",
+      bookingInfo: "予約情報",
+      minPeople: "最少人数",
+      maxPeople: "最大人数",
+      cutoff: "予約締切",
+      before: "開始前",
     },
     sections: {
       overview: "概要",
@@ -680,6 +758,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "含まれないもの",
       preparation: "持ち物",
       policies: "ポリシー",
+      noInfo: "情報がありません",
     },
     overview: {
       highlights: "ハイライト",
@@ -696,6 +775,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "集合場所",
       startTime: "開始時間",
       languages: "言語",
+      included: "含む",
     },
     itinerary: {
       dayLabel: "日目",
@@ -711,6 +791,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "キャンセルポリシー",
       refund: "返金ポリシー",
       changes: "変更ポリシー",
+      contactUs: "ポリシーについてはお問い合わせください",
     },
     cta: {
       title: "ご質問がありますか？",
@@ -752,6 +833,12 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       instantConfirmation: "Мгновенное подтверждение",
       freeCancellation: "Бесплатная отмена",
       bestPrice: "Гарантия лучшей цены",
+      availableDates: "Доступные даты",
+      bookingInfo: "Информация о бронировании",
+      minPeople: "Минимум человек",
+      maxPeople: "Максимум человек",
+      cutoff: "Срок бронирования",
+      before: "до начала",
     },
     sections: {
       overview: "Обзор",
@@ -760,6 +847,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       excluded: "Не Включено",
       preparation: "Что Взять",
       policies: "Политики",
+      noInfo: "Информация недоступна",
     },
     overview: {
       highlights: "Особенности",
@@ -776,6 +864,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       meetingPoint: "Место встречи",
       startTime: "Время начала",
       languages: "Языки",
+      included: "Включено",
     },
     itinerary: {
       dayLabel: "День",
@@ -791,6 +880,7 @@ const tourDetailDictionaries: Record<Locale, TourDetailDictionary> = {
       cancellation: "Политика отмены",
       refund: "Политика возврата",
       changes: "Политика изменений",
+      contactUs: "Свяжитесь с нами для получения информации о политиках",
     },
     cta: {
       title: "Есть Вопросы?",

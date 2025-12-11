@@ -10,12 +10,20 @@ export const toursService = {
     return response.data
   },
 
-  // ⭐ GET /tours/popular?lang=XX  ← NUEVO
+  // GET /tours/popular?lang=XX
   async getPopularTours(lang?: string) {
     const response = await api.get<Tour[]>("/tours/popular", {
       params: lang ? { lang } : {},
     })
-    return response.data // Debe devolver EXACTAMENTE 4 tours
+    return response.data
+  },
+
+  // GET /tours/slug/:slug?lang=XX
+  async getTourBySlug(slug: string, lang?: string) {
+    const response = await api.get<Tour>(`/tours/slug/${slug}`, {
+      params: lang ? { lang } : {},
+    })
+    return response.data
   },
 
   // GET /tours/:id?lang=XX

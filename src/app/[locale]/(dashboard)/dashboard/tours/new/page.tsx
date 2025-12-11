@@ -59,7 +59,7 @@ export default function NewTourPage() {
       if (result) {
         setFormData((prev) => ({
           ...prev,
-          images: [...(prev.images || []), { url: result.url, secure_url: result.url, public_id: result.publicId }],
+          images: [...(prev.images || []), { url: result.url, secure_url: result.url, publicId: result.publicId }],
         }))
         toast.success("Imagen subida correctamente")
       }
@@ -282,7 +282,7 @@ export default function NewTourPage() {
                 {formData.images && formData.images.length > 0 && (
                   <div className="grid gap-4 md:grid-cols-4">
                     {formData.images.map((img, index) => (
-                      <div key={`${img.public_id}-${index}`} className="relative group">
+                      <div key={`${img.publicId}-${index}`} className="relative group">
                         <Image
                           src={img.url || "/placeholder.svg"}
                           alt={`Tour image ${index + 1}`}
