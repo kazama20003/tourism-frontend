@@ -37,6 +37,7 @@ export interface Cart {
   subtotal: number
   discountTotal: number
   grandTotal: number
+  totalPrice: number
   status: "open" | "converted" | "abandoned"
   expiresAt?: string
   createdAt: string

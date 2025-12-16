@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import useSWR from "swr"
 import { cartService } from "@/services/cart-service"
-import type { Cart, CreateCartItemDto } from "@/types/cart"
+import type { Cart, CreateCartItemDto, CartItem } from "@/types/cart"
 import { v4 as uuidv4 } from "uuid"
 
 const CART_SESSION_KEY = "cart_session_id"
@@ -27,19 +27,30 @@ const clearSessionId = (): void => {
   }
 }
 
-const sanitizeCartItem = (item: CreateCartItemDto): CreateCartItemDto => {
-  return {
-    productId: item.productId,
+const extractProductId = (productId: CartItem["productId"]): string => {
+  if (typeof productId === "string") {
+    return productId
+  }
+  return productId._id
+}
+
+const sanitizeCartItem = (item: CartItem): CreateCartItemDto => {
+  const sanitized: CreateCartItemDto = {
+    productId: extractProductId(item.productId),
     productType: item.productType,
-    travelDate: item.travelDate,
-    adults: item.adults,
-    children: item.children,
-    infants: item.infants,
     unitPrice: item.unitPrice,
     totalPrice: item.totalPrice,
-    appliedOfferId: item.appliedOfferId,
-    notes: item.notes,
   }
+
+  // Solo incluir campos opcionales si existen
+  if (item.travelDate) sanitized.travelDate = item.travelDate
+  if (item.adults !== undefined) sanitized.adults = item.adults
+  if (item.children !== undefined) sanitized.children = item.children
+  if (item.infants !== undefined) sanitized.infants = item.infants
+  if (item.appliedOfferId) sanitized.appliedOfferId = item.appliedOfferId
+  if (item.notes) sanitized.notes = item.notes
+
+  return sanitized
 }
 
 export function useCart() {
@@ -63,19 +74,22 @@ export function useCart() {
   const addItem = useCallback(
     async (item: CreateCartItemDto) => {
       try {
-        const sanitizedItem = sanitizeCartItem(item)
+        console.log("[v0] Adding item to cart:", item)
 
         if (!cart) {
           // Crear nuevo carrito con el item
           const newCart = await cartService.createCart({
             sessionId,
-            items: [sanitizedItem],
+            items: [item],
           })
           mutate(newCart, false)
           return newCart
         } else {
           const existingItems = cart.items.map(sanitizeCartItem)
-          const updatedItems = [...existingItems, sanitizedItem]
+          const updatedItems = [...existingItems, item]
+
+          console.log("[v0] Updating cart with sanitized items:", updatedItems)
+
           const updatedCart = await cartService.updateCart(cart._id, {
             items: updatedItems,
           })
@@ -96,7 +110,9 @@ export function useCart() {
       if (!cart) return
 
       try {
-        const updatedItems = cart.items.filter((item) => item.productId !== productId).map(sanitizeCartItem) // Sanitizar items
+        const updatedItems = cart.items
+          .filter((item) => extractProductId(item.productId) !== productId)
+          .map(sanitizeCartItem)
 
         // Si no quedan items, eliminar el carrito y el sessionId
         if (updatedItems.length === 0) {
@@ -125,8 +141,9 @@ export function useCart() {
 
       try {
         const updatedItems = cart.items
-          .map((item) => (item.productId === productId ? { ...item, ...updates } : item))
+          .map((item) => (extractProductId(item.productId) === productId ? { ...item, ...updates } : item))
           .map(sanitizeCartItem)
+
         const updatedCart = await cartService.updateCart(cart._id, {
           items: updatedItems,
         })

@@ -7,45 +7,22 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { ArrowRight, ArrowUpRight } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { getDictionary } from "@/lib/i18n/dictionaries"
+import { type Locale, isValidLocale, defaultLocale } from "@/lib/i18n/config"
+import { usePathname } from "next/navigation"
+import Image from "next/image"
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger)
 }
 
-const visitCards = [
-  {
-    title: "Find Us",
-    lines: ["Av. El Sol 380, Cusco", "Perú 08000"],
-    phone: "+51 84 234 567",
-    action: "Get Directions",
-    actionLink: "#",
-  },
-  {
-    title: "Tasting Room",
-    lines: ["Open Daily 10am-6pm", "Reservations recommended"],
-    phone: "+51 84 234 567",
-    action: "Make a Booking",
-    actionLink: "#",
-  },
-  {
-    title: "Restaurant",
-    lines: ["Open for lunch Tuesday - Sunday", "12pm - 4pm", "Dinner service 7pm - 10pm", "Friday & Saturday"],
-    phone: "+51 84 234 568",
-    email: "restaurant@peruvianwines.com",
-    action: "Make a Booking",
-    actionLink: "#",
-  },
-  {
-    title: "Office",
-    lines: ["PO Box 111 Cusco", "Perú 08000"],
-    phone: "+51 84 234 567",
-    email: "experience@peruvianwines.com",
-    action: "Contact Us",
-    actionLink: "#",
-  },
-]
-
 export default function AboutPage() {
+  const pathname = usePathname()
+  const currentLocaleFromPath = pathname.split("/")[1]
+  const currentLocale: Locale = isValidLocale(currentLocaleFromPath) ? currentLocaleFromPath : defaultLocale
+
+  const dict = getDictionary(currentLocale)
+
   const heroRef = useRef<HTMLDivElement>(null)
   const heroContentRef = useRef<HTMLDivElement>(null)
   const heroVideoRef = useRef<HTMLDivElement>(null)
@@ -257,13 +234,15 @@ export default function AboutPage() {
           ref={heroContentRef}
           className="absolute inset-0 flex flex-col items-start justify-end text-left px-4 md:px-8 lg:px-12 pb-12"
         >
-          <span className="text-white/70 text-xs font-medium tracking-[0.3em] uppercase mb-3 opacity-0">Our Story</span>
+          <span className="text-white/70 text-xs font-medium tracking-[0.3em] uppercase mb-3 opacity-0">
+            {dict.about.about.hero.subtitle}
+          </span>
 
-          <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-serif mb-2 opacity-0">About Us</h1>
+          <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-serif mb-2 opacity-0">
+            {dict.about.about.hero.title}
+          </h1>
 
-          <p className="text-white/60 text-sm md:text-base max-w-md opacity-0">
-            A legacy of passion, tradition, and exceptional wines
-          </p>
+          <p className="text-white/60 text-sm md:text-base max-w-md opacity-0">{dict.about.about.hero.description}</p>
         </div>
       </section>
 
@@ -273,20 +252,16 @@ export default function AboutPage() {
         <div ref={introRef} className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
           <div>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-foreground leading-tight">
-              A Peruvian Icon
+              {dict.about.about.intro.title}
               <br />
-              <span className="italic text-muted-foreground">For Wine, Culture & Experience</span>
+              <span className="italic text-muted-foreground">{dict.about.about.intro.titleHighlight}</span>
             </h2>
           </div>
           <div className="flex items-end">
             <div>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                Born in the heart of the Andes, our family has spent three generations crafting wines from the unique
-                terroir of our highlands, with character and just the right amount of curiosity. Founded in 1985 by
-                Carlos Mendoza.
-              </p>
+              <p className="text-muted-foreground leading-relaxed mb-6">{dict.about.about.intro.description}</p>
               <button className="inline-flex items-center gap-2 text-foreground text-sm font-medium tracking-wider uppercase hover:gap-3 transition-all">
-                Read Our Story
+                {dict.about.about.intro.cta}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -295,17 +270,21 @@ export default function AboutPage() {
 
         {/* Large Images */}
         <div ref={imagesRef} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="about-image aspect-[4/3] overflow-hidden">
-            <img
+          <div className="about-image aspect-4/3 overflow-hidden">
+            <Image
               src="https://res.cloudinary.com/djldb5hqg/image/upload/v1765667021/pexels-ton-souza-4613401_ktsuzv.jpg"
               alt="Our winemaking family"
+              width={800}
+              height={600}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
             />
           </div>
-          <div className="about-image aspect-[4/3] overflow-hidden">
-            <img
+          <div className="about-image aspect-4/3 overflow-hidden">
+            <Image
               src="https://res.cloudinary.com/djldb5hqg/image/upload/v1765667021/pexels-junior-machado-1821155-3452236_lbxulg.jpg"
               alt="Our honey production"
+              width={800}
+              height={600}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
             />
           </div>
@@ -316,10 +295,12 @@ export default function AboutPage() {
       <section ref={storyRef} className="py-24 px-4 md:px-8 lg:px-12 bg-secondary opacity-0">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* Image */}
-          <div className="aspect-[4/5] overflow-hidden">
-            <img
+          <div className="aspect-4/5 overflow-hidden">
+            <Image
               src="https://res.cloudinary.com/djldb5hqg/image/upload/v1765667021/pexels-gilmerdiaz-7144192_s4jl6g.jpg"
               alt="Culinary excellence"
+              width={800}
+              height={1000}
               className="w-full h-full object-cover"
             />
           </div>
@@ -327,28 +308,13 @@ export default function AboutPage() {
           {/* Content */}
           <div className="lg:pl-8">
             <h3 className="text-3xl md:text-4xl lg:text-5xl font-serif text-foreground leading-tight mb-8">
-              Showcasing the harmony between our wines and great food.
+              {dict.about.about.story.title}
             </h3>
 
             <div className="space-y-6 text-muted-foreground leading-relaxed">
-              <p>
-                Our winery crafts premium wines that celebrate the character of the Peruvian highlands and the terroir
-                of our volcanic soil. From bold Tannat to vibrant Torrontés and unique fruit wines, every bottle
-                reflects a commitment to sustainable practices and meticulous winemaking.
-              </p>
-              <p>
-                The wines express the nuances of the local terroir, marrying innovation with tradition to produce
-                varieties that are as expressive as they are elegant.
-              </p>
-              <p>
-                Located in the Sacred Valley, our winery is a 45-minute drive from Cusco. The Tasting Room offers seated
-                wine flight tastings, with a carefully crafted snack menu available, designed to enhance the
-                wine-tasting journey for guests. The Terrace is available for a more casual wine experience.
-              </p>
-              <p>
-                Beyond the tasting room, we have earned a reputation as a fine dining destination that captures the
-                essence of regional Peru.
-              </p>
+              {dict.about.about.story.paragraphs.map((paragraph: string, index: number) => (
+                <p key={index}>{paragraph}</p>
+              ))}
             </div>
           </div>
         </div>
@@ -357,42 +323,44 @@ export default function AboutPage() {
       {/* Visit Section - 4 Info Cards */}
       <section className="py-24 px-4 md:px-8 lg:px-12 bg-muted/50">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif text-foreground mb-4">Visit Us</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Our Tasting Room and Restaurant is a 45-minute drive from Cusco, or just a short walk from the Sacred Valley
-            Township. Easily accessible via the main highway.
-          </p>
+          <h2 className="text-4xl md:text-5xl font-serif text-foreground mb-4">{dict.about.about.visit.title}</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">{dict.about.about.visit.description}</p>
         </div>
 
         <div ref={visitRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {visitCards.map((card, index) => (
-            <div
-              key={index}
-              className="visit-card bg-background p-6 flex flex-col justify-between min-h-[320px] opacity-0"
-            >
-              <div>
-                <h3 className="text-lg font-serif text-foreground mb-4">{card.title}</h3>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  {card.lines.map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
+          {dict.about.about.visit.cards.map(
+            (
+              card: { title: string; lines: string[]; phone?: string; email?: string; action: string },
+              index: number,
+            ) => (
+              <div
+                key={index}
+                className="visit-card bg-background p-6 flex flex-col justify-between min-h-80 opacity-0"
+              >
+                <div>
+                  <h3 className="text-lg font-serif text-foreground mb-4">{card.title}</h3>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    {card.lines.map((line: string, i: number) => (
+                      <p key={i}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-6 space-y-3">
+                  {card.phone && (
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                      <span className="text-foreground">PH</span> {card.phone}
+                    </p>
+                  )}
+                  {card.email && <p className="text-xs text-muted-foreground uppercase tracking-wider">{card.email}</p>}
+                  <button className="w-full flex items-center justify-between py-3 border-t border-border text-foreground text-xs font-medium tracking-wider uppercase hover:gap-2 transition-all group">
+                    {card.action}
+                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </button>
                 </div>
               </div>
-
-              <div className="mt-auto pt-6 space-y-3">
-                {card.phone && (
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    <span className="text-foreground">PH</span> {card.phone}
-                  </p>
-                )}
-                {card.email && <p className="text-xs text-muted-foreground uppercase tracking-wider">{card.email}</p>}
-                <button className="w-full flex items-center justify-between py-3 border-t border-border text-foreground text-xs font-medium tracking-wider uppercase hover:gap-2 transition-all group">
-                  {card.action}
-                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </button>
-              </div>
-            </div>
-          ))}
+            ),
+          )}
         </div>
       </section>
 
@@ -401,16 +369,16 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Form */}
           <div className="bg-muted/30 p-6 lg:p-10">
-            <h2 className="text-3xl md:text-4xl font-serif text-foreground text-center mb-4">Get In Touch</h2>
-            <p className="text-muted-foreground text-center mb-8">
-              Complete the enquiry form and a member of our team will be in touch as soon as possible.
-            </p>
+            <h2 className="text-3xl md:text-4xl font-serif text-foreground text-center mb-4">
+              {dict.about.about.contact.title}
+            </h2>
+            <p className="text-muted-foreground text-center mb-8">{dict.about.about.contact.description}</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="First Name *"
+                  placeholder={dict.about.about.contact.form.firstName}
                   required
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
@@ -418,7 +386,7 @@ export default function AboutPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Last Name *"
+                  placeholder={dict.about.about.contact.form.lastName}
                   required
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -429,7 +397,7 @@ export default function AboutPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="email"
-                  placeholder="Email *"
+                  placeholder={dict.about.about.contact.form.email}
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -437,7 +405,7 @@ export default function AboutPage() {
                 />
                 <input
                   type="tel"
-                  placeholder="Phone"
+                  placeholder={dict.about.about.contact.form.phone}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full px-4 py-3 bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-foreground transition-colors"
@@ -465,7 +433,7 @@ export default function AboutPage() {
               </div>
 
               <textarea
-                placeholder="Message*"
+                placeholder={dict.about.about.contact.form.message}
                 required
                 rows={5}
                 value={formData.message}
@@ -480,7 +448,7 @@ export default function AboutPage() {
                   onCheckedChange={(checked) => setFormData({ ...formData, subscribe: checked as boolean })}
                 />
                 <label htmlFor="subscribe" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
-                  Join our mailing list to stay in touch with our latest news
+                  {dict.about.about.contact.form.subscribe}
                 </label>
               </div>
 
@@ -488,27 +456,29 @@ export default function AboutPage() {
                 type="submit"
                 className="w-full py-4 bg-foreground text-background text-sm font-medium tracking-wider uppercase rounded-full hover:bg-foreground/90 transition-colors"
               >
-                Submit
+                {dict.about.about.contact.form.submit}
               </button>
             </form>
           </div>
 
           {/* Map / Image */}
           <div className="relative">
-            <div className="aspect-[4/3] lg:aspect-auto lg:h-full overflow-hidden">
-              <img
+            <div className="aspect-4/3 lg:aspect-auto lg:h-full overflow-hidden">
+              <Image
                 src="/aerial-view-vineyard-peru-sacred-valley-andes-moun.jpg"
                 alt="Our vineyard location"
+                width={800}
+                height={600}
                 className="w-full h-full object-cover"
               />
             </div>
 
             {/* Address Card Overlay */}
             <div className="absolute bottom-6 right-6 bg-background p-6 max-w-xs shadow-lg">
-              <p className="text-lg font-serif text-foreground mb-1">Av. El Sol 380</p>
-              <p className="text-lg font-serif text-foreground mb-4">Sacred Valley, Cusco 08000</p>
+              <p className="text-lg font-serif text-foreground mb-1">{dict.about.about.contact.address.line1}</p>
+              <p className="text-lg font-serif text-foreground mb-4">{dict.about.about.contact.address.line2}</p>
               <button className="inline-flex items-center gap-2 px-6 py-3 border border-foreground text-foreground text-xs font-medium tracking-wider uppercase hover:bg-foreground hover:text-background transition-all">
-                Get Directions
+                {dict.about.about.contact.address.cta}
               </button>
             </div>
           </div>
@@ -517,21 +487,22 @@ export default function AboutPage() {
 
       {/* Join Our Team Section */}
       <section ref={joinRef} className="relative h-[50vh] min-h-[400px] overflow-hidden opacity-0">
-        <img
+        <Image
           src="/professional-chef-cooking-in-restaurant-kitchen-wa.jpg"
           alt="Join our team"
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-black/40" />
 
         <div className="absolute inset-0 flex items-center px-4 md:px-8 lg:px-12">
           <div className="text-white max-w-md">
-            <h2 className="text-3xl md:text-4xl font-serif mb-2">Looking To</h2>
-            <h2 className="text-3xl md:text-4xl font-serif mb-4">Join Our Team?</h2>
-            <p className="text-white/70 text-sm mb-2">Send an email with your CV to:</p>
-            <p className="text-white text-sm mb-6">experience@peruvianwines.com</p>
+            <h2 className="text-3xl md:text-4xl font-serif mb-2">{dict.about.about.team.title1}</h2>
+            <h2 className="text-3xl md:text-4xl font-serif mb-4">{dict.about.about.team.title2}</h2>
+            <p className="text-white/70 text-sm mb-2">{dict.about.about.team.description}</p>
+            <p className="text-white text-sm mb-6">{dict.about.about.team.email}</p>
             <button className="inline-flex items-center gap-2 text-white text-xs font-medium tracking-wider uppercase hover:gap-3 transition-all border-b border-white pb-1">
-              Email
+              {dict.about.about.team.cta}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

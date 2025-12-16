@@ -14,7 +14,7 @@ export enum PaymentStatus {
 
 export interface OrderItem {
   productId: string
-  productType: "tour" | "transport"
+  productType: "Tour" | "Transport"
   travelDate?: string
   adults?: number
   children?: number

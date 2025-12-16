@@ -1,8 +1,9 @@
 export enum AuthProvider {
-  LOCAL = "local",
-  GOOGLE = "google",
-  FACEBOOK = "facebook",
+  LOCAL = "LOCAL",
+  GOOGLE = "GOOGLE",
+  FACEBOOK = "FACEBOOK",
 }
+
 export interface User {
   _id: string
   id?: string
@@ -43,6 +44,7 @@ export interface UpdateUserDto {
   lastName?: string
   email?: string
   country?: string
+  password?: string
   phone?: string
   address?: string
   documentType?: string

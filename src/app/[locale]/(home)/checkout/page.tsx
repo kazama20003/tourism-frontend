@@ -215,18 +215,41 @@ export default function CheckoutPage() {
 
     const calculatedGrandTotal = calculatedSubtotal - discount
 
-    const orderItems: OrderItem[] = cartData.items.map((item: CartItem) => ({
-      productId: String(item.productId),
-      productType: item.productType as "tour" | "transport",
-      travelDate: item.travelDate,
-      adults: item.adults || 1,
-      children: item.children || 0,
-      infants: item.infants || 0,
-      unitPrice: Math.round(Number(item.unitPrice) || 0),
-      totalPrice: Math.round(Number(item.totalPrice) || 0),
-      appliedOfferId: appliedOffer?.id || item.appliedOfferId,
-      notes: item.notes,
-    }))
+    const orderItems: OrderItem[] = cartData.items.map((item: CartItem) => {
+      let productIdString: string
+
+      if (typeof item.productId === "string") {
+        productIdString = item.productId
+      } else if (item.productId && typeof item.productId === "object" && "_id" in item.productId) {
+        productIdString = String(item.productId._id)
+      } else {
+        console.error("[v0] Invalid productId format:", item.productId)
+        productIdString = String(item.productId)
+      }
+
+      const normalizedProductType = (item.productType.charAt(0).toUpperCase() +
+        item.productType.slice(1).toLowerCase()) as "Tour" | "Transport"
+
+      console.log("[v0] Processing item:", {
+        originalProductId: item.productId,
+        extractedProductId: productIdString,
+        originalProductType: item.productType,
+        normalizedProductType: normalizedProductType,
+      })
+
+      return {
+        productId: productIdString,
+        productType: normalizedProductType,
+        travelDate: item.travelDate,
+        adults: item.adults || 1,
+        children: item.children || 0,
+        infants: item.infants || 0,
+        unitPrice: Math.round(Number(item.unitPrice) || 0),
+        totalPrice: Math.round(Number(item.totalPrice) || 0),
+        appliedOfferId: appliedOffer?.id || item.appliedOfferId,
+        notes: item.notes,
+      }
+    })
 
     return {
       customerName: customerData.name.trim(),
@@ -252,6 +275,7 @@ export default function CheckoutPage() {
       const orderData = convertCartToOrderData(cart, customerInfo)
       const orderDataInPEN = {
         ...orderData,
+        currency: "PEN",
         subtotal: Math.round(orderData.subtotal * USD_TO_PEN),
         grandTotal: Math.round(orderData.grandTotal * USD_TO_PEN),
         items: orderData.items.map((item) => ({
@@ -260,6 +284,15 @@ export default function CheckoutPage() {
           totalPrice: Math.round(item.totalPrice * USD_TO_PEN),
         })),
       }
+
+      console.log("[v0] COMPLETE Order data being sent to Izipay:", JSON.stringify(orderDataInPEN, null, 2))
+      console.log("[v0] Order items count:", orderDataInPEN.items.length)
+      console.log("[v0] Customer info:", {
+        name: orderDataInPEN.customerName,
+        email: orderDataInPEN.customerEmail,
+        phone: orderDataInPEN.customerPhone,
+      })
+
       await generateFormToken({ orderData: orderDataInPEN })
     } catch (err) {
       console.error("[v0] Error initializing payment:", err)

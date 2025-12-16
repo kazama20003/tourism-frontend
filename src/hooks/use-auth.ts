@@ -1,54 +1,107 @@
 "use client"
 
+import useSWR, { mutate } from "swr"
+import useSWRMutation from "swr/mutation"
+import { authService } from "@/services/auth-service"
+import type { User, UpdateUserDto } from "@/types/user"
+import type { LoginDto, RegisterDto } from "@/types/auth"
 import { useRouter } from "next/navigation"
-import { usePost } from "./use-api"
-import { decodeToken, getRedirectByRole } from "@/lib/utils"
-import { api } from "@/lib/api"
-import type { AuthResponse, LoginCredentials, LocalRegisterCredentials } from "@/types/auth"
-import type { CreateUserDto } from "@/types/user"
-import { AuthProvider } from "@/types/user"
+
+const PROFILE_KEY = "auth-profile"
+
+// Fetch del perfil autenticado
+const fetchProfile = async () => {
+  return authService.getProfile()
+}
+
+// Hook para obtener el perfil del usuario autenticado
+export function useProfile() {
+  return useSWR<User>(PROFILE_KEY, fetchProfile, {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  })
+}
+
+// Revalidar el perfil manualmente
+export function revalidateProfile() {
+  mutate(PROFILE_KEY)
+}
+
+// Hook para actualizar el perfil
+export function useUpdateProfile() {
+  return useSWRMutation(PROFILE_KEY, async (_, { arg }: { arg: { id: string; data: UpdateUserDto } }) => {
+    const result = await authService.updateProfile(arg.id, arg.data)
+    revalidateProfile()
+    return result
+  })
+}
 
 export function useLogin() {
   const router = useRouter()
 
-  return usePost<AuthResponse, LoginCredentials>("/auth/login/local", {
-    onSuccess: (data) => {
-      const payload = decodeToken(data.access_token)
-      if (payload) {
-        router.push(getRedirectByRole(payload.roles))
-      }
+  return useSWRMutation(
+    "auth-login",
+    async (_, { arg }: { arg: LoginDto }) => {
+      const result = await authService.loginLocal(arg)
+      // Revalidar el perfil después del login
+      revalidateProfile()
+      return result
     },
-  })
+    {
+      onSuccess: () => {
+        // Redirigir al home después del login exitoso
+        router.push("/")
+      },
+    },
+  )
 }
 
 export function useRegister() {
   const router = useRouter()
 
-  const mutation = usePost<AuthResponse, CreateUserDto>("/auth/register", {
-    onSuccess: (data) => {
-      const payload = decodeToken(data.access_token)
-      if (payload) {
-        router.push(getRedirectByRole(payload.roles))
+  return useSWRMutation(
+    "auth-register",
+    async (_, { arg }: { arg: RegisterDto }) => {
+      // Add authProvider: 'LOCAL' for local registration
+      const registerData = {
+        ...arg,
+        authProvider: "LOCAL" as const,
       }
+      const result = await authService.register(registerData)
+      // Revalidar el perfil después del registro
+      revalidateProfile()
+      return result
     },
-  })
-
-  return {
-    ...mutation,
-    register: (credentials: LocalRegisterCredentials) => {
-      const dto: CreateUserDto = {
-        firstName: credentials.firstName,
-        lastName: credentials.lastName,
-        email: credentials.email,
-        password: credentials.password,
-        authProvider: AuthProvider.LOCAL,
-      }
-
-      return mutation.mutate(dto)
+    {
+      onSuccess: () => {
+        // Redirigir al home después del registro exitoso
+        router.push("/")
+      },
     },
-  }
+  )
 }
 
-export function getOAuthRedirectUrl(provider: "google" | "facebook"): string {
-  return `${api.defaults.baseURL}/auth/${provider}`
+export function useLogout() {
+  const router = useRouter()
+
+  return useSWRMutation(
+    "auth-logout",
+    async () => {
+      // Llamar al servicio logout que usa el api client correcto (puerto 4001)
+      await authService.logout()
+
+      // Limpiar el caché del perfil
+      mutate(PROFILE_KEY, null, false)
+
+      // Limpiar localStorage
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+    },
+    {
+      onSuccess: () => {
+        // Redirigir al login después del logout exitoso
+        router.push("/login")
+      },
+    },
+  )
 }

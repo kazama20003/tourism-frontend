@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRegister } from "@/hooks/use-auth"
-import { getOAuthRedirectUrl } from "@/hooks/use-auth"
+import { authService } from "@/services/auth-service"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [passwordError, setPasswordError] = useState("")
 
-  const registerMutation = useRegister()
+  const { trigger: register, isMutating: isPending, error } = useRegister()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +32,7 @@ export default function RegisterPage() {
       return
     }
 
-    registerMutation.register({
+    register({
       firstName,
       lastName,
       email,
@@ -41,7 +41,11 @@ export default function RegisterPage() {
   }
 
   const handleOAuthRegister = (provider: "google" | "facebook") => {
-    window.location.href = getOAuthRedirectUrl(provider)
+    if (provider === "google") {
+      window.location.href = authService.getGoogleAuthUrl()
+    } else {
+      window.location.href = authService.getFacebookAuthUrl()
+    }
   }
 
   return (
@@ -87,10 +91,8 @@ export default function RegisterPage() {
               <p className="text-muted-foreground">Join E-tourims and start planning your next adventure today.</p>
             </div>
 
-            {(registerMutation.error || passwordError) && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg">
-                {registerMutation.error?.message || passwordError}
-              </div>
+            {(error || passwordError) && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg">{error?.message || passwordError}</div>
             )}
 
             <div className="space-y-4">
@@ -210,10 +212,10 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
-              disabled={registerMutation.isPending}
+              disabled={isPending}
               className="w-full h-12 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-none cursor-pointer"
             >
-              {registerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
             </Button>
 
             <div className="relative">

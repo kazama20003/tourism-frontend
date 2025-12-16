@@ -13,7 +13,7 @@ export function Footer({ locale }: FooterProps) {
   const dict = getFooterDictionary(locale)
 
   return (
-    <footer className="bg-[#fff] text-[#1a1a1a]">
+    <footer className="bg-white text-[#1a1a1a]">
       <div className="w-full h-px bg-black/25" />
 
       <div className="px-6 md:px-12 pt-12 pb-6">
@@ -87,18 +87,18 @@ export function Footer({ locale }: FooterProps) {
           </div>
         </div>
 
-        {/* Middle section - Address, MAXWELL-MADE, Socials */}
+        {/* Middle section - Address, PERU-TRAVEL, Socials */}
         <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8 mb-12">
           {/* Address */}
           <div className="text-xs leading-relaxed italic text-[#1a1a1a]/80">
             <p>{dict.address}</p>
             <p>{dict.country}</p>
             <p>
-              {dict.phone} <span className="not-italic">+61 8 8323 8200</span>
+              {dict.phone} <span className="not-italic">+51 84 123 4567</span>
             </p>
           </div>
 
-          {/* MAXWELL-MADE */}
+          {/* PERU-TRAVEL */}
           <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-[#1a1a1a]">{dict.brand}</h2>
 
           {/* Social icons */}

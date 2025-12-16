@@ -1,0 +1,57 @@
+"use client"
+
+import { useRouter } from "next/navigation"
+import { usePost } from "./use-api"
+import { decodeToken, getRedirectByRole } from "@/lib/utils"
+import { authService } from "@/services/auth-service"
+import type { AuthResponse, LoginCredentials, LocalRegisterCredentials } from "@/types/auth"
+import type { CreateUserDto } from "@/types/user"
+import { AuthProvider } from "@/types/user"
+
+export function useLogin() {
+  const router = useRouter()
+
+  return usePost<AuthResponse, LoginCredentials>("/auth/login/local", {
+    onSuccess: (data) => {
+      const payload = decodeToken(data.access_token)
+      if (payload) {
+        router.push(getRedirectByRole(payload.roles))
+      }
+    },
+  })
+}
+
+export function useRegister() {
+  const router = useRouter()
+
+  const mutation = usePost<AuthResponse, CreateUserDto>("/auth/register", {
+    onSuccess: (data) => {
+      const payload = decodeToken(data.access_token)
+      if (payload) {
+        router.push(getRedirectByRole(payload.roles))
+      }
+    },
+  })
+
+  return {
+    ...mutation,
+    register: (credentials: LocalRegisterCredentials) => {
+      const dto: CreateUserDto = {
+        firstName: credentials.firstName,
+        lastName: credentials.lastName,
+        email: credentials.email,
+        password: credentials.password,
+        authProvider: AuthProvider.LOCAL,
+      }
+
+      return mutation.mutate(dto)
+    },
+  }
+}
+
+export function getOAuthRedirectUrl(provider: "google" | "facebook"): string {
+  if (provider === "google") {
+    return authService.getGoogleAuthUrl()
+  }
+  return authService.getFacebookAuthUrl()
+}

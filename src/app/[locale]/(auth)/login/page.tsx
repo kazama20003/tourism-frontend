@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useLogin } from "@/hooks/use-auth"
-import { getOAuthRedirectUrl } from "@/hooks/use-auth"
+import { authService } from "@/services/auth-service"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -17,15 +17,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  const loginMutation = useLogin()
+  const { trigger: login, isMutating: isPending, error } = useLogin()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    loginMutation.mutate({ email, password })
+    login({ email, password })
   }
 
   const handleOAuthLogin = (provider: "google" | "facebook") => {
-    window.location.href = getOAuthRedirectUrl(provider)
+    if (provider === "google") {
+      window.location.href = authService.getGoogleAuthUrl()
+    } else {
+      window.location.href = authService.getFacebookAuthUrl()
+    }
   }
 
   return (
@@ -103,8 +107,10 @@ export default function LoginPage() {
                 <p className="text-muted-foreground">Enter your email and password to access your account.</p>
               </div>
 
-              {loginMutation.error && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg">{loginMutation.error.message}</div>
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-lg">
+                  {error.message || "Error al iniciar sesión"}
+                </div>
               )}
 
               <div className="space-y-4">
@@ -173,10 +179,10 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                disabled={loginMutation.isPending}
+                disabled={isPending}
                 className="w-full h-12 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-none cursor-pointer"
               >
-                {loginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Log In"}
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Log In"}
               </Button>
 
               <div className="relative">
