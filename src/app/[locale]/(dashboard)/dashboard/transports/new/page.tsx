@@ -34,6 +34,18 @@ const LANG_LABELS: Record<Lang, { name: string; flag: string }> = {
   ru: { name: "Ruso", flag: "🇷🇺" },
 }
 
+type WeekDay = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday"
+
+const WEEKDAYS: { value: WeekDay; label: string }[] = [
+  { value: "monday", label: "Lunes" },
+  { value: "tuesday", label: "Martes" },
+  { value: "wednesday", label: "Miércoles" },
+  { value: "thursday", label: "Jueves" },
+  { value: "friday", label: "Viernes" },
+  { value: "saturday", label: "Sábado" },
+  { value: "sunday", label: "Domingo" },
+]
+
 export default function NewTransportPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("general")
@@ -57,6 +69,7 @@ export default function NewTransportPage() {
   const [destination, setDestination] = useState<Coordinates>({ name: "", lat: 0, lng: 0 })
   const [route, setRoute] = useState<RouteStep[]>([])
   const [images, setImages] = useState<TransportImage[]>([])
+  const [availableDays, setAvailableDays] = useState<WeekDay[]>([])
 
   const { data: vehiclesData } = useVehicles(1, 100)
   const vehicles = Array.isArray(vehiclesData)
@@ -170,6 +183,10 @@ export default function NewTransportPage() {
     }
   }
 
+  const toggleAvailableDay = (day: WeekDay) => {
+    setAvailableDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]))
+  }
+
   const handleSubmit = async () => {
     if (!formData.title || !origin.name || !destination.name || !formData.vehicle) {
       alert("Por favor completa los campos requeridos: título, origen, destino y vehículo")
@@ -202,6 +219,7 @@ export default function NewTransportPage() {
       titleTranslations: formData.titleTranslations,
       descriptionTranslations: formData.descriptionTranslations,
       routeDescriptionTranslations: formData.routeDescriptionTranslations,
+      availableDays: availableDays.length > 0 ? availableDays : undefined,
     }
 
     try {
@@ -454,6 +472,39 @@ export default function NewTransportPage() {
                       <p className="text-xs text-muted-foreground">Hora estimada de llegada al destino</p>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/40 bg-card/50 backdrop-blur">
+                <CardHeader>
+                  <CardTitle>Días Disponibles</CardTitle>
+                  <CardDescription>Selecciona los días de la semana en que opera este servicio</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {WEEKDAYS.map((day) => (
+                      <Button
+                        key={day.value}
+                        type="button"
+                        variant={availableDays.includes(day.value) ? "default" : "outline"}
+                        onClick={() => toggleAvailableDay(day.value)}
+                        className="w-full justify-center"
+                      >
+                        {day.label}
+                      </Button>
+                    ))}
+                  </div>
+                  {availableDays.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-4">
+                      Si no seleccionas ningún día, se asumirá que el servicio está disponible todos los días
+                    </p>
+                  )}
+                  {availableDays.length > 0 && (
+                    <p className="text-xs text-emerald-600 mt-4">
+                      Servicio disponible:{" "}
+                      {availableDays.map((d) => WEEKDAYS.find((w) => w.value === d)?.label).join(", ")}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

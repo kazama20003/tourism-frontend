@@ -1,3 +1,4 @@
+
 // Idiomas soportados en el sistema
 export const SUPPORTED_LANGS = [
   "es", // Español

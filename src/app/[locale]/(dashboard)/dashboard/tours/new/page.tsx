@@ -19,7 +19,7 @@ import { useCreateTour, SUPPORTED_LANGUAGES } from "@/hooks/use-tours"
 import { useVehicles } from "@/hooks/use-vehicles"
 import { useUploadImage } from "@/hooks/use-uploads"
 import { toast } from "sonner"
-import type { CreateTourDto, Difficulty } from "@/types/tour"
+import type { CreateTourDto, Difficulty, AvailabilityType } from "@/types/tour"
 
 export default function NewTourPage() {
   const router = useRouter()
@@ -35,6 +35,7 @@ export default function NewTourPage() {
     currentPrice: 0,
     slug: "",
     images: [],
+    videoUrl: "", // Added videoUrl field
     vehicleIds: [],
     isActive: true,
     hasTransport: false,
@@ -45,9 +46,17 @@ export default function NewTourPage() {
     excludes: [],
     categories: [],
     languages: [],
+    availabilityType: "always_available",
+    availableDates: [],
+    itinerary: [], // Added itinerary field
+    cancellationPolicy: "", // Added policies
+    refundPolicy: "",
+    changePolicy: "",
+    startTime: "", // Added startTime field
   })
 
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [itineraryInput, setItineraryInput] = useState("")
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -59,10 +68,13 @@ export default function NewTourPage() {
       if (result) {
         setFormData((prev) => ({
           ...prev,
-          images: [...(prev.images || []), { url: result.url, secure_url: result.url, publicId: result.publicId }],
+          images: [...(prev.images || []), { url: result.url, publicId: result.publicId }],
         }))
         toast.success("Imagen subida correctamente")
       }
+    } catch (error) {
+      console.log("[v0] Error uploading image:", error)
+      toast.error("Error al subir la imagen")
     } finally {
       setUploadingImage(false)
     }
@@ -84,12 +96,18 @@ export default function NewTourPage() {
   }
 
   const handleVehicleToggle = (vehicleId: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      vehicleIds: checked
+    setFormData((prev) => {
+      const newVehicleIds = checked
         ? [...(prev.vehicleIds || []), vehicleId]
-        : (prev.vehicleIds || []).filter((id) => id !== vehicleId),
-    }))
+        : (prev.vehicleIds || []).filter((id) => id !== vehicleId)
+
+      console.log("[v0] Vehicle IDs updated:", newVehicleIds) // Added debug log
+
+      return {
+        ...prev,
+        vehicleIds: newVehicleIds,
+      }
+    })
   }
 
   const handleLanguageToggle = (langCode: string, checked: boolean) => {
@@ -107,6 +125,15 @@ export default function NewTourPage() {
     setFormData({ ...formData, title: value, slug })
   }
 
+  const parseItinerary = (text: string) => {
+    const lines = text.split("\n").filter((line) => line.trim())
+    return lines.map((line, index) => ({
+      order: index + 1,
+      title: line.substring(0, 100),
+      description: line,
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -115,11 +142,23 @@ export default function NewTourPage() {
       return
     }
 
+    if (itineraryInput.trim()) {
+      formData.itinerary = parseItinerary(itineraryInput)
+    }
+
+    const dataToSend = {
+      ...formData,
+      vehicleIds: formData.hasTransport ? formData.vehicleIds : [],
+    }
+
+    console.log("[v0] Submitting tour data:", dataToSend) // Added debug log
+
     try {
-      await createMutation.trigger(formData as CreateTourDto)
+      await createMutation.trigger(dataToSend as CreateTourDto)
       toast.success("Tour creado correctamente")
       router.push("/dashboard/tours")
     } catch (error) {
+      console.log("[v0] Error creating tour:", error) // Added debug log
       toast.error("Error al crear el tour")
     }
   }
@@ -183,13 +222,14 @@ export default function NewTourPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descripción *</Label>
+                  <Label htmlFor="description">Descripción * (Se traducirá automáticamente)</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={4}
                     required
+                    placeholder="Describe el tour en español. Esta descripción se traducirá automáticamente a los idiomas seleccionados."
                   />
                 </div>
 
@@ -213,10 +253,11 @@ export default function NewTourPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="currentPrice">Precio *</Label>
+                    <Label htmlFor="currentPrice">Precio (USD) *</Label>
                     <Input
                       id="currentPrice"
                       type="number"
+                      step="0.01"
                       value={formData.currentPrice}
                       onChange={(e) => setFormData({ ...formData, currentPrice: Number.parseFloat(e.target.value) })}
                       required
@@ -252,6 +293,138 @@ export default function NewTourPage() {
                       }
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="videoUrl">Link de Video (Solo Cloudinary)</Label>
+                  <Input
+                    id="videoUrl"
+                    type="url"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    placeholder="https://res.cloudinary.com/..."
+                    pattern="https://res\.cloudinary\.com/.*"
+                    title="Solo se aceptan videos de Cloudinary (https://res.cloudinary.com/...)"
+                  />
+                  <p className="text-sm text-muted-foreground">Solo se permiten videos alojados en Cloudinary</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">Hora de Inicio del Tour</Label>
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={formData.startTime || ""}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    placeholder="09:00"
+                  />
+                  <p className="text-sm text-muted-foreground">Hora a la que empieza el tour (formato 24 horas)</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Disponibilidad del Tour</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="availabilityType">Tipo de Disponibilidad *</Label>
+                  <Select
+                    value={formData.availabilityType}
+                    onValueChange={(value: AvailabilityType) => setFormData({ ...formData, availabilityType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tipo de disponibilidad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="always_available">Siempre Disponible (Cualquier día)</SelectItem>
+                      <SelectItem value="fixed_dates">Fechas Fijas Específicas</SelectItem>
+                      <SelectItem value="date_range">Rango de Fechas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.availabilityType === "fixed_dates" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="availableDates">
+                      Fechas Disponibles (separadas por comas, formato: YYYY-MM-DD)
+                    </Label>
+                    <Textarea
+                      id="availableDates"
+                      placeholder="Ej: 2024-12-25, 2024-12-31, 2025-01-15"
+                      onChange={(e) => {
+                        const dates = e.target.value
+                          .split(",")
+                          .map((d) => d.trim())
+                          .filter(Boolean)
+                        setFormData({ ...formData, availableDates: dates })
+                      }}
+                      rows={3}
+                    />
+                  </div>
+                )}
+
+                {formData.availabilityType === "date_range" && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">Fecha de Inicio</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={formData.startDate || ""}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">Fecha de Fin</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate || ""}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Itinerario (Se traducirá automáticamente)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="itinerary">Describe el itinerario del tour</Label>
+                  <Textarea
+                    id="itinerary"
+                    value={itineraryInput}
+                    onChange={(e) => setItineraryInput(e.target.value)}
+                    rows={8}
+                    placeholder="Escribe cada paso del itinerario en una línea nueva. Ejemplo:&#10;Día 1: Llegada a Lima y city tour&#10;Día 2: Visita a Machu Picchu&#10;Día 3: Retorno a Lima"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Cada línea se convertirá en un paso del itinerario. Este contenido se traducirá automáticamente.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Beneficios del Tour</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="benefits">Beneficios (separados por comas)</Label>
+                  <Textarea
+                    id="benefits"
+                    placeholder="Ej: Guía profesional, Entrada incluida, Transporte privado, Almuerzo incluido"
+                    onChange={(e) => handleArrayInput("benefits", e.target.value)}
+                    rows={4}
+                  />
+                  <p className="text-sm text-muted-foreground">Lista los beneficios del tour separados por comas</p>
                 </div>
               </CardContent>
             </Card>
@@ -312,6 +485,9 @@ export default function NewTourPage() {
                 <CardTitle>Idiomas Soportados</CardTitle>
               </CardHeader>
               <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Selecciona los idiomas en los que el tour estará disponible. La traducción se hará automáticamente.
+                </p>
                 <div className="grid gap-2 md:grid-cols-3">
                   {SUPPORTED_LANGUAGES.map((lang) => (
                     <div key={lang.code} className="flex items-center gap-2 p-3 border rounded-md">
@@ -340,7 +516,10 @@ export default function NewTourPage() {
                     <Checkbox
                       id="hasTransport"
                       checked={formData.hasTransport}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasTransport: checked as boolean })}
+                      onCheckedChange={(checked) => {
+                        console.log("[v0] hasTransport changed to:", checked) // Added debug log
+                        setFormData({ ...formData, hasTransport: checked as boolean })
+                      }}
                     />
                     <Label htmlFor="hasTransport">Este tour incluye transporte</Label>
                   </div>
@@ -367,23 +546,23 @@ export default function NewTourPage() {
             {/* Additional Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Información Adicional</CardTitle>
+                <CardTitle>Información Adicional (Se traducirá automáticamente)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="includes">Incluye (separado por comas)</Label>
+                  <Label htmlFor="includes">Qué Incluye (separado por comas)</Label>
                   <Textarea
                     id="includes"
-                    placeholder="Ej: Guía profesional, Almuerzo, Transporte"
+                    placeholder="Ej: Transporte, Guía turístico, Entradas, Almuerzo"
                     onChange={(e) => handleArrayInput("includes", e.target.value)}
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="excludes">No Incluye (separado por comas)</Label>
+                  <Label htmlFor="excludes">Qué No Incluye (separado por comas)</Label>
                   <Textarea
                     id="excludes"
-                    placeholder="Ej: Bebidas alcohólicas, Propinas"
+                    placeholder="Ej: Propinas, Bebidas alcohólicas, Gastos personales"
                     onChange={(e) => handleArrayInput("excludes", e.target.value)}
                     rows={3}
                   />
@@ -408,9 +587,48 @@ export default function NewTourPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Políticas (Se traducirán automáticamente)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cancellationPolicy">Política de Cancelación</Label>
+                  <Textarea
+                    id="cancellationPolicy"
+                    value={formData.cancellationPolicy}
+                    onChange={(e) => setFormData({ ...formData, cancellationPolicy: e.target.value })}
+                    rows={3}
+                    placeholder="Describe las condiciones de cancelación del tour"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="refundPolicy">Política de Reembolso</Label>
+                  <Textarea
+                    id="refundPolicy"
+                    value={formData.refundPolicy}
+                    onChange={(e) => setFormData({ ...formData, refundPolicy: e.target.value })}
+                    rows={3}
+                    placeholder="Describe las condiciones de reembolso"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="changePolicy">Política de Cambios</Label>
+                  <Textarea
+                    id="changePolicy"
+                    value={formData.changePolicy}
+                    onChange={(e) => setFormData({ ...formData, changePolicy: e.target.value })}
+                    rows={3}
+                    placeholder="Describe las condiciones para realizar cambios en la reserva"
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </form>
         </main>
       </div>
     </SidebarInset>
   )
 }
+  
