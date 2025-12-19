@@ -8,6 +8,7 @@ import { QueryProvider } from "@/components/providers/query-provider"
 import { I18nProvider } from "@/lib/i18n/context"
 import { getDictionary } from "@/lib/i18n/dictionaries"
 import { type Locale, isValidLocale, defaultLocale } from "@/lib/i18n/config"
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -24,18 +25,17 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
   params,
-}: Readonly<{
+}: {
   children: React.ReactNode
-  params: Promise<{ locale: string }>
-}>) {
-  const { locale: localeParam } = await params
+  params: { locale: string }
+}) {
+  const localeParam = params.locale
 
   const locale: Locale = isValidLocale(localeParam)
     ? localeParam
     : defaultLocale
 
-  // 👇 ESTA ERA LA PIEZA QUE FALTABA
-  const dictionary = getDictionary(locale)
+  const dictionary = await getDictionary(locale)
 
   return (
     <html lang={locale}>
