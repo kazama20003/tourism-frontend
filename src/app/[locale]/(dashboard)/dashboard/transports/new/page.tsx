@@ -1,169 +1,224 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useCreateTransport } from "@/hooks/use-transports"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowLeft, Save, Upload, Loader2, X, Info, Plus, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useCreateTour, SUPPORTED_LANGUAGES } from "@/hooks/use-tours"
 import { useVehicles } from "@/hooks/use-vehicles"
 import { useUploadImage } from "@/hooks/use-uploads"
-import type { Coordinates, RouteStep, TransportImage, Lang, WeekDay } from "@/types/transport"
-import { SUPPORTED_LANGS } from "@/types/transport"
-import { ArrowLeft, Upload, X, Plus, Trash2, Info, MapPin, Route, Clock, ImageIcon, Languages } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
+import { toast } from "sonner"
+import type { CreateTourDto, Difficulty, AvailabilityType } from "@/types/tour"
 
-const WEEKDAYS: { value: WeekDay; label: string }[] = [
-  { value: "monday", label: "Lunes" },
-  { value: "tuesday", label: "Martes" },
-  { value: "wednesday", label: "Miércoles" },
-  { value: "thursday", label: "Jueves" },
-  { value: "friday", label: "Viernes" },
-  { value: "saturday", label: "Sábado" },
-  { value: "sunday", label: "Domingo" },
-]
-
-export default function NewTransportPage() {
+export default function NewTourPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState("general")
-  const [formData, setFormData] = useState({
+  const createMutation = useCreateTour()
+  const { data: vehiclesData } = useVehicles(1, 100)
+  const uploadMutation = useUploadImage()
+
+  const [formData, setFormData] = useState<Partial<CreateTourDto>>({
     title: "",
     description: "",
-    routeDescription: "",
+    locationName: "",
+    durationDays: 1,
     currentPrice: 0,
-    oldPrice: 0,
-    vehicle: "",
-    durationHours: 0,
-    durationMinutes: 0,
-    departureTime: "",
-    arrivalTime: "",
-    titleTranslations: {} as Partial<Record<Lang, string>>,
-    descriptionTranslations: {} as Partial<Record<Lang, string>>,
-    routeDescriptionTranslations: {} as Partial<Record<Lang, string>>,
+    slug: "",
+    images: [],
+    videoUrl: "",
+    vehicleIds: [],
+    isActive: true,
+    hasTransport: false,
+    hasGuide: false,
+    benefits: [],
+    preparations: [],
+    includes: [],
+    excludes: [],
+    categories: [],
+    languages: [],
+    availabilityType: "unlimited", // Fixed default value
+    availableDates: [],
+    itinerary: [],
+    cancellationPolicy: "",
+    refundPolicy: "",
+    changePolicy: "",
+    startTime: "",
   })
-  const [origin, setOrigin] = useState<Coordinates>({ name: "", lat: 0, lng: 0 })
-  const [destination, setDestination] = useState<Coordinates>({ name: "", lat: 0, lng: 0 })
-  const [route, setRoute] = useState<RouteStep[]>([])
-  const [images, setImages] = useState<TransportImage[]>([])
-  const [availableDays, setAvailableDays] = useState<WeekDay[]>([])
 
-  const { data: vehiclesData } = useVehicles(1, 100)
-  const createTransportMutation = useCreateTransport()
-  const uploadImageMutation = useUploadImage()
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [includesInput, setIncludesInput] = useState("")
+  const [excludesInput, setExcludesInput] = useState("")
 
-  const vehicles = vehiclesData?.data || []
-
-  const toggleAvailableDay = (day: WeekDay) => {
-    setAvailableDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]))
-  }
-
-  const addRouteStep = () => {
-    const newStep: RouteStep = {
-      order: route.length + 1,
-      name: "",
-      lat: 0,
-      lng: 0,
-      translations: {},
-    }
-    setRoute([...route, newStep])
-  }
-
-  const updateRouteStep = (index: number, field: keyof RouteStep, value: unknown) => {
-    const updatedRoute = [...route]
-    updatedRoute[index] = { ...updatedRoute[index], [field]: value }
-    setRoute(updatedRoute)
-  }
-
-  const updateRouteStepTranslation = (index: number, lang: Lang, value: string) => {
-    const updatedRoute = [...route]
-    updatedRoute[index] = {
-      ...updatedRoute[index],
-      translations: { ...updatedRoute[index].translations, [lang]: value },
-    }
-    setRoute(updatedRoute)
-  }
-
-  const removeRouteStep = (index: number) => {
-    const updatedRoute = route.filter((_, i) => i !== index)
-    // Reorder remaining steps
-    updatedRoute.forEach((step, i) => {
-      step.order = i + 1
-    })
-    setRoute(updatedRoute)
-  }
+  const [itineraryItems, setItineraryItems] = useState<
+    Array<{
+      order: number
+      title: string
+      description: string
+      durationHours?: number
+      activities?: string
+      meals: {
+        breakfast: boolean
+        lunch: boolean
+        dinner: boolean
+      }
+      hotelNight: boolean
+    }>
+  >([])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    for (const file of Array.from(files)) {
-      try {
-        const result = await uploadImageMutation.trigger(file)
-        if (result) {
-          setImages((prev) => [...prev, { url: result.url, publicId: result.publicId }])
-        }
-      } catch (error) {
-        console.error("Error uploading image:", error)
-      }
-    }
-  }
-
-  const handleRouteStepImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setUploadingImage(true)
     try {
-      const result = await uploadImageMutation.trigger(file)
+      const result = await uploadMutation.trigger(file)
       if (result) {
-        updateRouteStep(index, "image", { url: result.url, publicId: result.publicId })
+        setFormData((prev) => ({
+          ...prev,
+          images: [...(prev.images || []), { url: result.url, publicId: result.publicId }],
+        }))
+        toast.success("Imagen subida correctamente")
       }
     } catch (error) {
-      console.error("Error uploading route step image:", error)
+      console.log("[v0] Error uploading image:", error)
+      toast.error("Error al subir la imagen")
+    } finally {
+      setUploadingImage(false)
     }
   }
 
-  const handleSubmit = async () => {
+  const handleRemoveImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images?.filter((_, i) => i !== index),
+    }))
+  }
+
+  const parseCommaList = (value: string): string[] => {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  const handleVehicleToggle = (vehicleId: string, checked: boolean) => {
+    setFormData((prev) => {
+      const newVehicleIds = checked
+        ? [...(prev.vehicleIds || []), vehicleId]
+        : (prev.vehicleIds || []).filter((id) => id !== vehicleId)
+
+      console.log("[v0] Vehicle IDs updated:", newVehicleIds)
+
+      return {
+        ...prev,
+        vehicleIds: newVehicleIds,
+      }
+    })
+  }
+
+  const handleLanguageToggle = (langCode: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      languages: checked ? [...(prev.languages || []), langCode] : (prev.languages || []).filter((l) => l !== langCode),
+    }))
+  }
+
+  const handleTitleChange = (value: string) => {
+    const slug = value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+    setFormData({ ...formData, title: value, slug })
+  }
+
+  const addItineraryDay = () => {
+    const newDay = {
+      order: itineraryItems.length + 1,
+      title: "",
+      description: "",
+      durationHours: undefined,
+      activities: "",
+      meals: { breakfast: false, lunch: false, dinner: false },
+      hotelNight: false,
+    }
+    setItineraryItems([...itineraryItems, newDay])
+  }
+
+  const removeItineraryDay = (index: number) => {
+    const updated = itineraryItems.filter((_, i) => i !== index)
+    // Reordenar
+    const reordered = updated.map((item, i) => ({ ...item, order: i + 1 }))
+    setItineraryItems(reordered)
+  }
+
+  const updateItineraryDay = (
+    index: number,
+    field: string,
+    value: string | number | boolean | string[] | undefined,
+  ) => {
+    setItineraryItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!formData.title || !formData.description || !formData.locationName) {
+      toast.error("Por favor completa los campos obligatorios")
+      return
+    }
+
+    const parsedItinerary = itineraryItems.map((item) => ({
+      order: item.order,
+      title: item.title,
+      description: item.description,
+      durationHours: item.durationHours,
+      activities: item.activities
+        ? item.activities
+            .split(",")
+            .map((a) => a.trim())
+            .filter(Boolean)
+        : undefined,
+      meals: item.meals,
+      hotelNight: item.hotelNight,
+    }))
+
+    const dataToSend: CreateTourDto = {
+      ...formData,
+      itinerary: parsedItinerary,
+      benefits: formData.benefits ? parseCommaList(formData.benefits.join(", ")) : [],
+      includes: parseCommaList(includesInput),
+      excludes: parseCommaList(excludesInput),
+      vehicleIds: formData.hasTransport ? formData.vehicleIds : [],
+    } as CreateTourDto
+
+    console.log("[v0] Submitting tour data:", dataToSend)
+
     try {
-      const transportData = {
-        title: formData.title,
-        description: formData.description || undefined,
-        routeDescription: formData.routeDescription || undefined,
-        titleTranslations: Object.keys(formData.titleTranslations).length > 0 ? formData.titleTranslations : undefined,
-        descriptionTranslations:
-          Object.keys(formData.descriptionTranslations).length > 0 ? formData.descriptionTranslations : undefined,
-        routeDescriptionTranslations:
-          Object.keys(formData.routeDescriptionTranslations).length > 0
-            ? formData.routeDescriptionTranslations
-            : undefined,
-        route: route.length > 0 ? route : undefined,
-        origin,
-        destination,
-        vehicle: formData.vehicle,
-        currentPrice: formData.currentPrice,
-        oldPrice: formData.oldPrice > 0 ? formData.oldPrice : undefined,
-        durationHours: formData.durationHours > 0 ? formData.durationHours : undefined,
-        durationMinutes: formData.durationMinutes > 0 ? formData.durationMinutes : undefined,
-        departureTime: formData.departureTime || undefined,
-        arrivalTime: formData.arrivalTime || undefined,
-        availableDays: availableDays.length > 0 ? availableDays : undefined,
-        images: images.length > 0 ? images : undefined,
-      }
-
-      await createTransportMutation.trigger(transportData)
-      router.push("/dashboard/transports")
+      await createMutation.trigger(dataToSend)
+      toast.success("Tour creado correctamente")
+      router.push("/dashboard/tours")
     } catch (error) {
-      console.error("Error creating transport:", error)
+      console.log("[v0] Error creating tour:", error)
+      toast.error("Error al crear el tour")
     }
   }
+
+  // Filter only active vehicles
+  const activeVehicles = vehiclesData?.data?.filter((vehicle) => vehicle.isActive) || []
 
   return (
     <SidebarInset>
@@ -173,551 +228,596 @@ export default function NewTransportPage() {
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <div className="flex items-center justify-between w-full">
-              <div>
-                <h1 className="text-xl font-semibold">Nuevo Paquete de Transporte</h1>
-                <p className="text-sm text-muted-foreground">Crea un nuevo servicio de transporte turístico</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard/transports">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Volver
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href="/dashboard/tours">
+                    <ArrowLeft className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button onClick={handleSubmit} disabled={createTransportMutation.isMutating}>
-                  {createTransportMutation.isMutating ? "Creando..." : "Crear Paquete"}
-                </Button>
+                <div>
+                  <h1 className="text-xl font-semibold">Crear Nuevo Tour</h1>
+                  <p className="text-sm text-muted-foreground">Completa la información del tour</p>
+                </div>
               </div>
+              <Button onClick={handleSubmit} disabled={createMutation.isMutating}>
+                {createMutation.isMutating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Guardar Tour
+              </Button>
             </div>
           </div>
         </header>
 
         <main className="flex flex-1 flex-col gap-6 p-6 bg-background/50 backdrop-blur rounded-b-lg">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6 h-auto">
-              <TabsTrigger
-                value="general"
-                className="flex-col gap-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Info className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">General</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="location"
-                className="flex-col gap-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <MapPin className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">Ubicación</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="route"
-                className="flex-col gap-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Route className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">Ruta</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="schedule"
-                className="flex-col gap-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">Horarios</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="images"
-                className="flex-col gap-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <ImageIcon className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">Imágenes</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="translations"
-                className="flex-col gap-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Languages className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">Traducciones</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="general" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Información General</CardTitle>
-                  <CardDescription>Detalles básicos del paquete de transporte</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Información Básica</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Título</Label>
+                    <Label htmlFor="title">Título *</Label>
                     <Input
                       id="title"
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Ej: Transfer Aeropuerto - Hotel"
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                      required
+                      placeholder="Ej: Tour Machu Picchu 2 Días"
                     />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="description">Descripción</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Describe el servicio de transporte..."
-                      rows={4}
+                    <Label htmlFor="slug">Slug (Auto-generado)</Label>
+                    <Input id="slug" value={formData.slug} disabled className="bg-muted" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descripción * (Se traducirá automáticamente)</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={4}
+                    required
+                    placeholder="Describe el tour en español. Esta descripción se traducirá automáticamente a los idiomas seleccionados."
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="locationName">Ubicación *</Label>
+                    <Input
+                      id="locationName"
+                      value={formData.locationName}
+                      onChange={(e) => setFormData({ ...formData, locationName: e.target.value })}
+                      required
+                      placeholder="Ej: Cusco, Perú"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPrice">Precio Actual</Label>
-                      <Input
-                        id="currentPrice"
-                        type="number"
-                        value={formData.currentPrice}
-                        onChange={(e) => setFormData({ ...formData, currentPrice: Number(e.target.value) })}
-                        placeholder="0"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="oldPrice">Precio Anterior (opcional)</Label>
-                      <Input
-                        id="oldPrice"
-                        type="number"
-                        value={formData.oldPrice}
-                        onChange={(e) => setFormData({ ...formData, oldPrice: Number(e.target.value) })}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="vehicle">Vehículo</Label>
+                    <Label htmlFor="durationDays">Días de duración *</Label>
+                    <Input
+                      id="durationDays"
+                      type="number"
+                      min="1"
+                      value={formData.durationDays}
+                      onChange={(e) => setFormData({ ...formData, durationDays: Number.parseInt(e.target.value) })}
+                      placeholder="1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPrice">Precio (USD) *</Label>
+                    <Input
+                      id="currentPrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.currentPrice}
+                      onChange={(e) => setFormData({ ...formData, currentPrice: Number.parseFloat(e.target.value) })}
+                      required
+                      placeholder="99.00"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="difficulty">Dificultad</Label>
                     <Select
-                      value={formData.vehicle}
-                      onValueChange={(value) => setFormData({ ...formData, vehicle: value })}
+                      value={formData.difficulty}
+                      onValueChange={(value: Difficulty) => setFormData({ ...formData, difficulty: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un vehículo" />
+                        <SelectValue placeholder="Seleccionar dificultad" />
                       </SelectTrigger>
                       <SelectContent>
-                        {vehicles.map((vehicle) => (
-                          <SelectItem key={vehicle._id} value={vehicle._id}>
-                            {vehicle.name} - {vehicle.brand} {vehicle.model} ({vehicle.capacity} pax)
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="easy">Fácil</SelectItem>
+                        <SelectItem value="medium">Media</SelectItem>
+                        <SelectItem value="hard">Difícil</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="location" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ubicaciones</CardTitle>
-                  <CardDescription>Define el origen y destino del servicio</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Origen</Label>
+                    <Label htmlFor="capacity">Capacidad Máxima</Label>
                     <Input
-                      value={origin.name}
-                      onChange={(e) => setOrigin({ ...origin, name: e.target.value })}
-                      placeholder="Nombre del lugar de origen"
+                      id="capacity"
+                      type="number"
+                      min="1"
+                      value={formData.capacity || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, capacity: Number.parseInt(e.target.value) || undefined })
+                      }
+                      placeholder="Ej: 15"
                     />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="number"
-                        step="any"
-                        value={origin.lat}
-                        onChange={(e) => setOrigin({ ...origin, lat: Number(e.target.value) })}
-                        placeholder="Latitud"
-                      />
-                      <Input
-                        type="number"
-                        step="any"
-                        value={origin.lng}
-                        onChange={(e) => setOrigin({ ...origin, lng: Number(e.target.value) })}
-                        placeholder="Longitud"
-                      />
-                    </div>
                   </div>
+                </div>
 
-                  <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="videoUrl">Link de Video (Solo Cloudinary)</Label>
+                  <Input
+                    id="videoUrl"
+                    type="url"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    placeholder="https://res.cloudinary.com/..."
+                    pattern="https://res\.cloudinary\.com/.*"
+                    title="Solo se aceptan videos de Cloudinary (https://res.cloudinary.com/...)"
+                  />
+                  <p className="text-sm text-muted-foreground">Solo se permiten videos alojados en Cloudinary</p>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label>Destino</Label>
-                    <Input
-                      value={destination.name}
-                      onChange={(e) => setDestination({ ...destination, name: e.target.value })}
-                      placeholder="Nombre del lugar de destino"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="number"
-                        step="any"
-                        value={destination.lat}
-                        onChange={(e) => setDestination({ ...destination, lat: Number(e.target.value) })}
-                        placeholder="Latitud"
-                      />
-                      <Input
-                        type="number"
-                        step="any"
-                        value={destination.lng}
-                        onChange={(e) => setDestination({ ...destination, lng: Number(e.target.value) })}
-                        placeholder="Longitud"
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">Hora de Inicio del Tour</Label>
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={formData.startTime || ""}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    placeholder="09:00"
+                  />
+                  <p className="text-sm text-muted-foreground">Hora a la que empieza el tour (formato 24 horas)</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Availability Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Disponibilidad del Tour</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="availabilityType">Tipo de Disponibilidad *</Label>
+                  <Select
+                    value={formData.availabilityType}
+                    onValueChange={(value: AvailabilityType) => setFormData({ ...formData, availabilityType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tipo de disponibilidad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unlimited">Siempre Disponible (Cualquier día)</SelectItem>
+                      <SelectItem value="fixed_dates">Fechas Fijas Específicas</SelectItem>
+                      <SelectItem value="date_range">Rango de Fechas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-900">
+                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-blue-800 dark:text-blue-300">
+                      <strong>Siempre Disponible:</strong> El tour se puede reservar cualquier día del año.
+                      <br />
+                      <strong>Fechas Fijas:</strong> El tour solo está disponible en fechas específicas que defines.
+                      <br />
+                      <strong>Rango de Fechas:</strong> El tour está disponible entre una fecha de inicio y fin.
+                    </p>
                   </div>
+                </div>
 
-                  <Separator />
-
+                {formData.availabilityType === "fixed_dates" && (
                   <div className="space-y-2">
-                    <Label htmlFor="routeDescription">Descripción de la Ruta (Opcional)</Label>
+                    <Label htmlFor="availableDates">
+                      Fechas Disponibles (separadas por comas, formato: YYYY-MM-DD)
+                    </Label>
                     <Textarea
-                      id="routeDescription"
-                      value={formData.routeDescription}
-                      onChange={(e) => setFormData({ ...formData, routeDescription: e.target.value })}
-                      placeholder="Describe la ruta del transporte..."
-                      rows={4}
+                      id="availableDates"
+                      placeholder="Ejemplo: 2024-12-25, 2024-12-31, 2025-01-15"
+                      onChange={(e) => {
+                        const dates = parseCommaList(e.target.value)
+                        setFormData({ ...formData, availableDates: dates })
+                      }}
+                      rows={3}
                     />
+                    <p className="text-sm text-muted-foreground">
+                      Escribe cada fecha en formato YYYY-MM-DD, separadas por comas
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                )}
 
-            <TabsContent value="route" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pasos de la Ruta</CardTitle>
-                  <CardDescription>Define los puntos de parada en la ruta del transporte</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm text-muted-foreground">Agrega pasos intermedios en la ruta (opcional)</p>
-                    <Button type="button" onClick={addRouteStep} variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar Paso
+                {formData.availabilityType === "date_range" && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">Fecha de Inicio</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={formData.startDate || ""}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">Fecha de Fin</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate || ""}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Itinerary Section - Improved UI */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Itinerario Detallado (Se traducirá automáticamente)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-900 mb-4">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-800 dark:text-blue-300">
+                    Agrega cada día del itinerario con todos sus detalles: título, descripción, duración, actividades,
+                    comidas incluidas y si incluye noche de hotel. Todo el contenido se traducirá automáticamente.
+                  </p>
+                </div>
+
+                {itineraryItems.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                    <p className="text-muted-foreground mb-4">No hay días agregados al itinerario</p>
+                    <Button type="button" onClick={addItineraryDay} variant="outline">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Agregar Primer Día
                     </Button>
                   </div>
-
-                  {route.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>No hay pasos agregados. Haz clic en Agregar Paso para comenzar.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {route.map((step, index) => (
-                        <Card key={index} className="relative">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-base">Paso {step.order}</CardTitle>
-                              <Button type="button" variant="ghost" size="icon" onClick={() => removeRouteStep(index)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
+                ) : (
+                  <div className="space-y-6">
+                    {itineraryItems.map((item, index) => (
+                      <Card key={index} className="border-2">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">Día {item.order}</CardTitle>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeItineraryDay(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                              <Label>Nombre del Lugar</Label>
+                              <Label htmlFor={`day-${index}-title`}>Título del Día *</Label>
                               <Input
-                                value={step.name}
-                                onChange={(e) => updateRouteStep(index, "name", e.target.value)}
-                                placeholder="Ej: Mirador del Valle"
+                                id={`day-${index}-title`}
+                                value={item.title}
+                                onChange={(e) => updateItineraryDay(index, "title", e.target.value)}
+                                placeholder="Ej: Llegada a Lima y City Tour"
+                                required
                               />
                             </div>
-
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="space-y-2">
-                                <Label>Latitud</Label>
-                                <Input
-                                  type="number"
-                                  step="any"
-                                  value={step.lat}
-                                  onChange={(e) => updateRouteStep(index, "lat", Number(e.target.value))}
-                                  placeholder="0.0"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Longitud</Label>
-                                <Input
-                                  type="number"
-                                  step="any"
-                                  value={step.lng}
-                                  onChange={(e) => updateRouteStep(index, "lng", Number(e.target.value))}
-                                  placeholder="0.0"
-                                />
-                              </div>
-                            </div>
-
                             <div className="space-y-2">
-                              <Label>Imagen del Paso (Opcional)</Label>
+                              <Label htmlFor={`day-${index}-duration`}>Duración (horas)</Label>
                               <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleRouteStepImageUpload(index, e)}
+                                id={`day-${index}-duration`}
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={item.durationHours || ""}
+                                onChange={(e) =>
+                                  updateItineraryDay(
+                                    index,
+                                    "durationHours",
+                                    e.target.value ? Number.parseFloat(e.target.value) : undefined,
+                                  )
+                                }
+                                placeholder="Ej: 8"
                               />
-                              {step.image?.url && (
-                                <div className="relative mt-2">
-                                  <Image
-                                    src={step.image.url || "/placeholder.svg"}
-                                    alt={`Route step ${index + 1}`}
-                                    width={200}
-                                    height={150}
-                                    className="rounded-lg object-cover w-full h-32"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute top-2 right-2"
-                                    onClick={() => updateRouteStep(index, "image", undefined)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
                             </div>
+                          </div>
 
-                            <Separator />
+                          <div className="space-y-2">
+                            <Label htmlFor={`day-${index}-description`}>Descripción del Día *</Label>
+                            <Textarea
+                              id={`day-${index}-description`}
+                              value={item.description}
+                              onChange={(e) => updateItineraryDay(index, "description", e.target.value)}
+                              rows={3}
+                              placeholder="Describe en detalle las actividades de este día..."
+                              required
+                            />
+                          </div>
 
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium">Traducciones del Nombre</Label>
-                              <div className="grid grid-cols-2 gap-2">
-                                {SUPPORTED_LANGS.filter((lang) => lang !== "es").map((lang) => (
-                                  <div key={lang} className="space-y-1">
-                                    <Label htmlFor={`route-${index}-${lang}`} className="text-xs uppercase">
-                                      {lang}
-                                    </Label>
-                                    <Input
-                                      id={`route-${index}-${lang}`}
-                                      value={step.translations?.[lang] || ""}
-                                      onChange={(e) => updateRouteStepTranslation(index, lang, e.target.value)}
-                                      placeholder={`Nombre en ${lang}`}
-                                      className="text-sm"
-                                    />
-                                  </div>
-                                ))}
+                          <div className="space-y-2">
+                            <Label htmlFor={`day-${index}-activities`}>Actividades (separadas por comas)</Label>
+                            <Input
+                              id={`day-${index}-activities`}
+                              value={item.activities || ""}
+                              onChange={(e) => updateItineraryDay(index, "activities", e.target.value)}
+                              placeholder="Ej: Visita al centro histórico, Museo Nacional, Plaza Mayor"
+                            />
+                            <p className="text-sm text-muted-foreground">Lista de actividades separadas por comas</p>
+                          </div>
+
+                          <div className="space-y-3">
+                            <Label>Comidas Incluidas</Label>
+                            <div className="flex flex-wrap gap-4">
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`day-${index}-breakfast`}
+                                  checked={item.meals.breakfast}
+                                  onCheckedChange={(checked) => updateItineraryDay(index, "meals.breakfast", checked)}
+                                />
+                                <Label htmlFor={`day-${index}-breakfast`} className="cursor-pointer font-normal">
+                                  Desayuno
+                                </Label>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`day-${index}-lunch`}
+                                  checked={item.meals.lunch}
+                                  onCheckedChange={(checked) => updateItineraryDay(index, "meals.lunch", checked)}
+                                />
+                                <Label htmlFor={`day-${index}-lunch`} className="cursor-pointer font-normal">
+                                  Almuerzo
+                                </Label>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`day-${index}-dinner`}
+                                  checked={item.meals.dinner}
+                                  onCheckedChange={(checked) => updateItineraryDay(index, "meals.dinner", checked)}
+                                />
+                                <Label htmlFor={`day-${index}-dinner`} className="cursor-pointer font-normal">
+                                  Cena
+                                </Label>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                          </div>
 
-            <TabsContent value="schedule" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Horarios y Duración</CardTitle>
-                  <CardDescription>Configura los horarios del servicio</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="durationHours">Duración (Horas)</Label>
-                      <Input
-                        id="durationHours"
-                        type="number"
-                        value={formData.durationHours}
-                        onChange={(e) => setFormData({ ...formData, durationHours: Number(e.target.value) })}
-                        placeholder="0"
-                      />
-                    </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`day-${index}-hotel`}
+                              checked={item.hotelNight}
+                              onCheckedChange={(checked) => updateItineraryDay(index, "hotelNight", checked as boolean)}
+                            />
+                            <Label htmlFor={`day-${index}-hotel`} className="cursor-pointer font-normal">
+                              Incluye noche de hotel
+                            </Label>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="durationMinutes">Duración (Minutos)</Label>
-                      <Input
-                        id="durationMinutes"
-                        type="number"
-                        value={formData.durationMinutes}
-                        onChange={(e) => setFormData({ ...formData, durationMinutes: Number(e.target.value) })}
-                        placeholder="0"
-                      />
-                    </div>
+                    <Button type="button" onClick={addItineraryDay} variant="outline" className="w-full bg-transparent">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Agregar Otro Día
+                    </Button>
                   </div>
+                )}
+              </CardContent>
+            </Card>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="departureTime">Hora de Salida</Label>
-                      <Input
-                        id="departureTime"
-                        type="time"
-                        value={formData.departureTime}
-                        onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
-                      />
+            {/* Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Imágenes del Tour</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <Label htmlFor="image-upload" className="cursor-pointer">
+                    <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-muted">
+                      {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {uploadingImage ? "Subiendo..." : "Subir Imagen"}
                     </div>
+                  </Label>
+                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="arrivalTime">Hora de Llegada</Label>
-                      <Input
-                        id="arrivalTime"
-                        type="time"
-                        value={formData.arrivalTime}
-                        onChange={(e) => setFormData({ ...formData, arrivalTime: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <Label>Días Disponibles</Label>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Selecciona los días en los que el servicio está disponible
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-7 gap-2">
-                      {WEEKDAYS.map((day) => (
+                {formData.images && formData.images.length > 0 && (
+                  <div className="grid gap-4 md:grid-cols-4">
+                    {formData.images.map((img, index) => (
+                      <div key={`${img.publicId}-${index}`} className="relative group">
+                        <Image
+                          src={img.url || "/placeholder.svg"}
+                          alt={`Tour image ${index + 1}`}
+                          width={128}
+                          height={128}
+                          className="w-full h-32 object-cover rounded-md"
+                        />
                         <Button
-                          key={day.value}
                           type="button"
-                          variant={availableDays.includes(day.value) ? "default" : "outline"}
-                          onClick={() => toggleAvailableDay(day.value)}
-                          className="w-full justify-center text-xs sm:text-sm"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleRemoveImage(index)}
                         >
-                          {day.label}
+                          <X className="h-4 w-4" />
                         </Button>
-                      ))}
-                    </div>
-                    {availableDays.length === 0 && (
-                      <p className="text-xs text-muted-foreground mt-4">
-                        Si no seleccionas ningún día, se asumirá que el servicio está disponible todos los días
-                      </p>
-                    )}
-                    {availableDays.length > 0 && (
-                      <p className="text-xs text-emerald-600 mt-4">
-                        Servicio disponible:{" "}
-                        {availableDays.map((d) => WEEKDAYS.find((w) => w.value === d)?.label).join(", ")}
-                      </p>
-                    )}
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                )}
+              </CardContent>
+            </Card>
 
-            <TabsContent value="images" className="space-y-4">
+            {/* Supported Languages */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Idiomas Soportados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Selecciona los idiomas en los que el tour estará disponible. La traducción se hará automáticamente.
+                </p>
+                <div className="grid gap-2 md:grid-cols-3">
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <div key={lang.code} className="flex items-center gap-2 p-3 border rounded-md">
+                      <Checkbox
+                        id={`lang-${lang.code}`}
+                        checked={formData.languages?.includes(lang.code)}
+                        onCheckedChange={(checked) => handleLanguageToggle(lang.code, checked as boolean)}
+                      />
+                      <Label htmlFor={`lang-${lang.code}`} className="flex-1 cursor-pointer">
+                        {lang.name} ({lang.code.toUpperCase()})
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Vehicles - Only Active */}
+            {activeVehicles.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Imágenes</CardTitle>
-                  <CardDescription>Agrega imágenes del servicio de transporte</CardDescription>
+                  <CardTitle>Vehículos Disponibles</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="images">Subir Imágenes</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="images"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="flex-1"
-                      />
-                      <Button type="button" variant="outline" size="icon">
-                        <Upload className="h-4 w-4" />
-                      </Button>
-                    </div>
+                <CardContent>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Checkbox
+                      id="hasTransport"
+                      checked={formData.hasTransport}
+                      onCheckedChange={(checked) => {
+                        console.log("[v0] hasTransport changed to:", checked)
+                        setFormData({ ...formData, hasTransport: checked as boolean })
+                      }}
+                    />
+                    <Label htmlFor="hasTransport">Este tour incluye transporte</Label>
                   </div>
-
-                  {images.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                      {images.map((image, index) => (
-                        <div key={index} className="relative group">
-                          <Image
-                            src={image.url || "/placeholder.svg"}
-                            alt={`Transport image ${index + 1}`}
-                            width={200}
-                            height={150}
-                            className="rounded-lg object-cover w-full h-32"
+                  {formData.hasTransport && (
+                    <div className="grid gap-2">
+                      {activeVehicles.map((vehicle) => (
+                        <div key={vehicle._id} className="flex items-center gap-2 p-3 border rounded-md">
+                          <Checkbox
+                            id={`vehicle-${vehicle._id}`}
+                            checked={formData.vehicleIds?.includes(vehicle._id)}
+                            onCheckedChange={(checked) => handleVehicleToggle(vehicle._id, checked as boolean)}
                           />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => setImages(images.filter((_, i) => i !== index))}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          <Label htmlFor={`vehicle-${vehicle._id}`} className="flex-1 cursor-pointer">
+                            {vehicle.brand} {vehicle.model} ({vehicle.capacity} personas)
+                          </Label>
                         </div>
                       ))}
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="translations" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Traducciones</CardTitle>
-                  <CardDescription>Agrega traducciones para otros idiomas</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {SUPPORTED_LANGS.filter((lang) => lang !== "es").map((lang) => (
-                    <div key={lang} className="space-y-4 p-4 border rounded-lg">
-                      <h3 className="font-semibold text-sm uppercase">{lang}</h3>
+            {/* Additional Info - Improved UI */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Información Adicional (Se traducirá automáticamente)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="includes">Qué Incluye (separado por comas)</Label>
+                  <Textarea
+                    id="includes"
+                    value={includesInput}
+                    onChange={(e) => setIncludesInput(e.target.value)}
+                    placeholder="Transporte privado, Guía turístico certificado, Entradas a todos los sitios, Almuerzo típico, Seguro de viaje"
+                    rows={3}
+                  />
+                  <p className="text-sm text-muted-foreground">Cada item separado por coma (,)</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="excludes">Qué No Incluye (separado por comas)</Label>
+                  <Textarea
+                    id="excludes"
+                    value={excludesInput}
+                    onChange={(e) => setExcludesInput(e.target.value)}
+                    placeholder="Propinas, Bebidas alcohólicas, Gastos personales, Cena"
+                    rows={3}
+                  />
+                  <p className="text-sm text-muted-foreground">Cada item separado por coma (,)</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="hasGuide"
+                      checked={formData.hasGuide}
+                      onCheckedChange={(checked) => setFormData({ ...formData, hasGuide: checked as boolean })}
+                    />
+                    <Label htmlFor="hasGuide">Incluye guía turístico</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked as boolean })}
+                    />
+                    <Label htmlFor="isActive">Tour activo (visible en el sitio web)</Label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                      <div className="space-y-2">
-                        <Label htmlFor={`title-${lang}`}>Título</Label>
-                        <Input
-                          id={`title-${lang}`}
-                          value={formData.titleTranslations[lang] || ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              titleTranslations: { ...formData.titleTranslations, [lang]: e.target.value },
-                            })
-                          }
-                          placeholder={`Título en ${lang}`}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor={`description-${lang}`}>Descripción</Label>
-                        <Textarea
-                          id={`description-${lang}`}
-                          value={formData.descriptionTranslations[lang] || ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              descriptionTranslations: { ...formData.descriptionTranslations, [lang]: e.target.value },
-                            })
-                          }
-                          placeholder={`Descripción en ${lang}`}
-                          rows={3}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor={`routeDescription-${lang}`}>Descripción de la Ruta</Label>
-                        <Textarea
-                          id={`routeDescription-${lang}`}
-                          value={formData.routeDescriptionTranslations[lang] || ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              routeDescriptionTranslations: {
-                                ...formData.routeDescriptionTranslations,
-                                [lang]: e.target.value,
-                              },
-                            })
-                          }
-                          placeholder={`Descripción de la ruta en ${lang}`}
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            {/* Policies Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Políticas (Se traducirán automáticamente)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cancellationPolicy">Política de Cancelación</Label>
+                  <Textarea
+                    id="cancellationPolicy"
+                    value={formData.cancellationPolicy}
+                    onChange={(e) => setFormData({ ...formData, cancellationPolicy: e.target.value })}
+                    rows={3}
+                    placeholder="Ejemplo: Cancelación gratuita hasta 48 horas antes del tour. Después de ese tiempo se cobrará el 50% del total."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="refundPolicy">Política de Reembolso</Label>
+                  <Textarea
+                    id="refundPolicy"
+                    value={formData.refundPolicy}
+                    onChange={(e) => setFormData({ ...formData, refundPolicy: e.target.value })}
+                    rows={3}
+                    placeholder="Ejemplo: Reembolso completo si se cancela con más de 7 días de anticipación."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="changePolicy">Política de Cambios</Label>
+                  <Textarea
+                    id="changePolicy"
+                    value={formData.changePolicy}
+                    onChange={(e) => setFormData({ ...formData, changePolicy: e.target.value })}
+                    rows={3}
+                    placeholder="Ejemplo: Los cambios de fecha están permitidos sin costo hasta 24 horas antes del tour."
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </form>
         </main>
       </div>
     </SidebarInset>

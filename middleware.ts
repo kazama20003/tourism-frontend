@@ -1,35 +1,58 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { defaultLocale, isValidLocale } from "@/lib/i18n/config";
 import { UserRole } from "@/types/auth";
 
+// PUBLIC ROUTES
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 
-function decodeJwtPayload(token) {
+// ---------------------------------------------------------------------
+// Tipado seguro del payload del JWT
+// ---------------------------------------------------------------------
+interface JwtPayload {
+  exp?: number;
+  roles?: UserRole[];
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------
+// EDGE-SAFE JWT decoding
+// ---------------------------------------------------------------------
+function decodeJwtPayload(token: string): JwtPayload | null {
   try {
     const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = Buffer.from(base64, "base64").toString("utf-8");
-    return JSON.parse(jsonPayload);
+
+    const jsonPayload = atob(base64);
+    return JSON.parse(jsonPayload) as JwtPayload;
   } catch {
     return null;
   }
 }
 
-function getLocaleFromPath(pathname) {
+// ---------------------------------------------------------------------
+// Locale helpers
+// ---------------------------------------------------------------------
+function getLocaleFromPath(pathname: string): string | null {
   const segments = pathname.split("/");
   return isValidLocale(segments[1]) ? segments[1] : null;
 }
 
-function getPathWithoutLocale(pathname) {
+function getPathWithoutLocale(pathname: string): string {
   const locale = getLocaleFromPath(pathname);
   return locale ? pathname.replace(`/${locale}`, "") || "/" : pathname;
 }
 
-export function middleware(request) {
+// ---------------------------------------------------------------------
+// MAIN MIDDLEWARE
+// ---------------------------------------------------------------------
+export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const pathname = url.pathname;
 
-  // Skip static routes
+  // IGNORAR rutas de sistema
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -42,22 +65,18 @@ export function middleware(request) {
   const locale = getLocaleFromPath(pathname);
   const pathNoLocale = getPathWithoutLocale(pathname);
 
-  // ------------------------------------
   // FIX: evitar loop /es ↔ /es/
-  // ------------------------------------
   if (locale && (pathname === `/${locale}` || pathname === `/${locale}/`)) {
     return NextResponse.next();
   }
 
-  // ------------------------------------
-  // Si NO tiene locale, agregarlo
-  // ------------------------------------
+  // SIN LOCALE → asignar automáticamente
   if (!locale) {
     let chosen = defaultLocale;
 
-    const lang = request.headers.get("accept-language");
-    if (lang) {
-      const preferred = lang.split(",")[0].split("-")[0];
+    const langHeader = request.headers.get("accept-language");
+    if (langHeader) {
+      const preferred = langHeader.split(",")[0].split("-")[0];
       if (isValidLocale(preferred)) chosen = preferred;
     }
 
@@ -65,49 +84,41 @@ export function middleware(request) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // ------------------------------------
   // TOKEN HANDLING
-  // ------------------------------------
   const token = request.cookies.get("token")?.value;
   const payload = token ? decodeJwtPayload(token) : null;
 
-  const roles = payload?.roles ?? [];
+  const roles: UserRole[] = Array.isArray(payload?.roles)
+    ? (payload?.roles as UserRole[])
+    : [];
 
-  // ------------------------------------
-  // Public routes
-  // ------------------------------------
+  // PUBLIC ROUTES
   if (publicRoutes.some((r) => pathNoLocale.startsWith(r))) {
     if (!payload) return NextResponse.next();
 
-    if (!Array.isArray(roles)) return NextResponse.next();
-
-    // CLIENT → profile
+    // CLIENT → users/profile
     if (
       roles.includes(UserRole.CLIENT) &&
       !roles.some((r) =>
         [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
       )
     ) {
-      const redirectUrl = new URL(`/${locale}/users/profile`, request.url);
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL(`/${locale}/users/profile`, request.url));
     }
 
-    // ADMIN → dashboard
+    // ADMIN / SUPPORT / EDITOR → dashboard
     if (
       roles.some((r) =>
         [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
       )
     ) {
-      const redirectUrl = new URL(`/${locale}/dashboard`, request.url);
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
     }
 
     return NextResponse.next();
   }
 
-  // ------------------------------------
-  // Protected routes
-  // ------------------------------------
+  // PROTECTED ROUTES
   const isProtected =
     pathNoLocale.startsWith("/dashboard") ||
     pathNoLocale.startsWith("/users");
@@ -115,29 +126,22 @@ export function middleware(request) {
   if (isProtected) {
     // NO TOKEN → login
     if (!token || !payload) {
-      const redirectUrl = new URL(`/${locale}/login`, request.url);
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
     }
 
-    // Token expirado
+    // TOKEN EXPIRADO
     if (payload.exp && Date.now() >= payload.exp * 1000) {
-      const response = NextResponse.redirect(
-        new URL(`/${locale}/login`, request.url)
-      );
+      const response = NextResponse.redirect(new URL(`/${locale}/login`, request.url));
       response.cookies.delete("token");
       return response;
     }
 
-    // CLIENT queriendo entrar a dashboard
-    if (
-      pathNoLocale.startsWith("/dashboard") &&
-      roles.includes(UserRole.CLIENT)
-    ) {
-      const redirectUrl = new URL(`/${locale}/users/profile`, request.url);
-      return NextResponse.redirect(redirectUrl);
+    // CLIENT intenta entrar al dashboard
+    if (pathNoLocale.startsWith("/dashboard") && roles.includes(UserRole.CLIENT)) {
+      return NextResponse.redirect(new URL(`/${locale}/users/profile`, request.url));
     }
 
-    // ADMIN queriendo entrar a /users/profile sin ser CLIENT
+    // ADMIN/EDITOR/SUPPORT entrando a users/profile sin ser CLIENT
     if (
       pathNoLocale.startsWith("/users/profile") &&
       roles.some((r) =>
@@ -145,14 +149,16 @@ export function middleware(request) {
       ) &&
       !roles.includes(UserRole.CLIENT)
     ) {
-      const redirectUrl = new URL(`/${locale}/dashboard`, request.url);
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
     }
   }
 
   return NextResponse.next();
 }
 
+// ---------------------------------------------------------------------
+// MATCHER
+// ---------------------------------------------------------------------
 export const config = {
   matcher: ["/((?!_next|api|favicon|.*\\..*).*)"],
 };
