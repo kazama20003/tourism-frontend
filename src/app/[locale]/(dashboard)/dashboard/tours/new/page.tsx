@@ -46,7 +46,7 @@ export default function NewTourPage() {
     excludes: [],
     categories: [],
     languages: [],
-    availabilityType: "always_available",
+    availabilityType: "unlimited",
     availableDates: [],
     itinerary: [], // Added itinerary field
     cancellationPolicy: "", // Added policies
