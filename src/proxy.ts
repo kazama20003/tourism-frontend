@@ -26,11 +26,9 @@ function getPathWithoutLocale(pathname: string): string {
   return locale ? pathname.replace(`/${locale}`, "") || "/" : pathname;
 }
 
-// --------------------------------------------------------------------------------------
-// DEFAULT EXPORT - requerido por Next.js
-// --------------------------------------------------------------------------------------
-export default function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export default function middleware(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  const pathname = url.pathname;
 
   // Skip static files
   if (
@@ -39,21 +37,26 @@ export default function proxy(request: NextRequest) {
     pathname.includes(".") ||
     pathname.startsWith("/favicon")
   ) {
-    return;
+    return NextResponse.next();
   }
 
   const locale = getLocaleFromPathname(pathname);
   const pathNoLocale = getPathWithoutLocale(pathname);
 
   // --------------------------------------------------------------------
-  // FIX: Evitar loop /es -> /es/ -> /es
+  // FIX DEFINITIVO: Evitar el loop /es ↔ /es/
   // --------------------------------------------------------------------
   if (locale && (pathname === `/${locale}` || pathname === `/${locale}/`)) {
-    return;
+    // Normalizamos SIEMPRE a `/${locale}/`
+    if (!pathname.endsWith("/")) {
+      url.pathname = `/${locale}/`;
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next(); // Permite continuar sin redirigir
   }
 
   // --------------------------------------------------------------------
-  // Redirección si NO hay locale
+  // Redirección si NO hay locale en el pathname
   // --------------------------------------------------------------------
   if (!locale) {
     let chosenLocale = defaultLocale;
@@ -64,9 +67,8 @@ export default function proxy(request: NextRequest) {
       if (isValidLocale(preferred)) chosenLocale = preferred;
     }
 
-    return NextResponse.redirect(
-      new URL(`/${chosenLocale}${pathname}`, request.url)
-    );
+    url.pathname = `/${chosenLocale}${pathname}`;
+    return NextResponse.redirect(url);
   }
 
   // --------------------------------------------------------------------
@@ -89,9 +91,8 @@ export default function proxy(request: NextRequest) {
             [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
           )
         ) {
-          return NextResponse.redirect(
-            new URL(`/${locale}/users/profile`, request.url)
-          );
+          url.pathname = `/${locale}/users/profile`;
+          return NextResponse.redirect(url);
         }
 
         // ADMIN/EDITOR/SUPPORT → /dashboard
@@ -100,13 +101,12 @@ export default function proxy(request: NextRequest) {
             [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
           )
         ) {
-          return NextResponse.redirect(
-            new URL(`/${locale}/dashboard`, request.url)
-          );
+          url.pathname = `/${locale}/dashboard`;
+          return NextResponse.redirect(url);
         }
       }
     }
-    return;
+    return NextResponse.next();
   }
 
   // --------------------------------------------------------------------
@@ -118,17 +118,15 @@ export default function proxy(request: NextRequest) {
 
   if (isProtected) {
     if (!token) {
-      return NextResponse.redirect(
-        new URL(`/${locale}/login`, request.url)
-      );
+      url.pathname = `/${locale}/login`;
+      return NextResponse.redirect(url);
     }
 
     const payload = decodeJwtPayload(token);
 
     if (!payload) {
-      return NextResponse.redirect(
-        new URL(`/${locale}/login`, request.url)
-      );
+      url.pathname = `/${locale}/login`;
+      return NextResponse.redirect(url);
     }
 
     // Token expired
@@ -150,12 +148,11 @@ export default function proxy(request: NextRequest) {
         [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
       )
     ) {
-      return NextResponse.redirect(
-        new URL(`/${locale}/users/profile`, request.url)
-      );
+      url.pathname = `/${locale}/users/profile`;
+      return NextResponse.redirect(url);
     }
 
-    // ADMIN intentando entrar a profile de usuario
+    // ADMIN intentando entrar al profile de usuario
     if (
       pathNoLocale.startsWith("/users/profile") &&
       roles.some((r) =>
@@ -163,18 +160,14 @@ export default function proxy(request: NextRequest) {
       ) &&
       !roles.includes(UserRole.CLIENT)
     ) {
-      return NextResponse.redirect(
-        new URL(`/${locale}/dashboard`, request.url)
-      );
+      url.pathname = `/${locale}/dashboard`;
+      return NextResponse.redirect(url);
     }
   }
 
-  return;
+  return NextResponse.next();
 }
 
-// --------------------------------------------------------------------------------------
-// MATCHER
-// --------------------------------------------------------------------------------------
 export const config = {
   matcher: ["/((?!_next|api|favicon|.*\\..*).*)"],
 };
