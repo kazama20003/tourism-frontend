@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { useCreateTransport } from "@/hooks/use-transports"
 import { useVehicles } from "@/hooks/use-vehicles"
 import { useUploadImage } from "@/hooks/use-uploads"
@@ -43,7 +42,6 @@ export default function NewTransportPage() {
     currentPrice: 0,
     oldPrice: 0,
     vehicle: "",
-    isActive: true,
     durationHours: 0,
     durationMinutes: 0,
     departureTime: "",
@@ -71,12 +69,28 @@ export default function NewTransportPage() {
   const handleSubmit = async () => {
     try {
       const transportData = {
-        ...formData,
+        title: formData.title,
+        description: formData.description || undefined,
+        routeDescription: formData.routeDescription || undefined,
+        titleTranslations: Object.keys(formData.titleTranslations).length > 0 ? formData.titleTranslations : undefined,
+        descriptionTranslations:
+          Object.keys(formData.descriptionTranslations).length > 0 ? formData.descriptionTranslations : undefined,
+        routeDescriptionTranslations:
+          Object.keys(formData.routeDescriptionTranslations).length > 0
+            ? formData.routeDescriptionTranslations
+            : undefined,
+        route: route.length > 0 ? route : undefined,
         origin,
         destination,
-        route: route.length > 0 ? route : undefined,
-        images: images.length > 0 ? images : undefined,
+        vehicle: formData.vehicle,
+        currentPrice: formData.currentPrice,
+        oldPrice: formData.oldPrice > 0 ? formData.oldPrice : undefined,
+        durationHours: formData.durationHours > 0 ? formData.durationHours : undefined,
+        durationMinutes: formData.durationMinutes > 0 ? formData.durationMinutes : undefined,
+        departureTime: formData.departureTime || undefined,
+        arrivalTime: formData.arrivalTime || undefined,
         availableDays: availableDays.length > 0 ? availableDays : undefined,
+        images: images.length > 0 ? images : undefined,
       }
 
       await createTransportMutation.trigger(transportData)
@@ -209,18 +223,6 @@ export default function NewTransportPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="isActive">Estado</Label>
-                      <p className="text-sm text-muted-foreground">Activar o desactivar el paquete</p>
-                    </div>
-                    <Switch
-                      id="isActive"
-                      checked={formData.isActive}
-                      onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                    />
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -282,6 +284,19 @@ export default function NewTransportPage() {
                         placeholder="Longitud"
                       />
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="routeDescription">Descripción de la Ruta (Opcional)</Label>
+                    <Textarea
+                      id="routeDescription"
+                      value={formData.routeDescription}
+                      onChange={(e) => setFormData({ ...formData, routeDescription: e.target.value })}
+                      placeholder="Describe la ruta del transporte..."
+                      rows={4}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -466,6 +481,25 @@ export default function NewTransportPage() {
                             })
                           }
                           placeholder={`Descripción en ${lang}`}
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`routeDescription-${lang}`}>Descripción de la Ruta</Label>
+                        <Textarea
+                          id={`routeDescription-${lang}`}
+                          value={formData.routeDescriptionTranslations[lang] || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              routeDescriptionTranslations: {
+                                ...formData.routeDescriptionTranslations,
+                                [lang]: e.target.value,
+                              },
+                            })
+                          }
+                          placeholder={`Descripción de la ruta en ${lang}`}
                           rows={3}
                         />
                       </div>
