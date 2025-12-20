@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { UserRole } from "@/types/auth";
 import { defaultLocale, isValidLocale } from "@/lib/i18n/config";
+import { UserRole } from "@/types/auth";
 
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 
-function decodeJwtPayload(token: string) {
+function decodeJwtPayload(token) {
   try {
     const base64Url = token.split(".")[1];
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -16,17 +15,17 @@ function decodeJwtPayload(token: string) {
   }
 }
 
-function getLocaleFromPathname(pathname: string): string | null {
+function getLocaleFromPathname(pathname) {
   const segments = pathname.split("/");
   return isValidLocale(segments[1]) ? segments[1] : null;
 }
 
-function getPathWithoutLocale(pathname: string): string {
+function getPathWithoutLocale(pathname) {
   const locale = getLocaleFromPathname(pathname);
   return locale ? pathname.replace(`/${locale}`, "") || "/" : pathname;
 }
 
-export function middleware(request: NextRequest) {
+export function middleware(request) {
   const url = request.nextUrl.clone();
   const pathname = url.pathname;
 
@@ -43,9 +42,7 @@ export function middleware(request: NextRequest) {
   const locale = getLocaleFromPathname(pathname);
   const pathNoLocale = getPathWithoutLocale(pathname);
 
-  // --------------------------------------------------------------------
-  // FIX REAL DEL LOOP /es ↔ /es/
-  // --------------------------------------------------------------------
+  // Avoid /es ↔ /es/ loop
   if (locale) {
     const normalized = `/${locale}/`;
 
@@ -58,9 +55,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // --------------------------------------------------------------------
-  // Redirección si NO hay locale
-  // --------------------------------------------------------------------
+  // Redirect if no locale
   if (!locale) {
     let chosenLocale = defaultLocale;
     const langHeader = request.headers.get("accept-language");
@@ -74,9 +69,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // --------------------------------------------------------------------
   // Public routes
-  // --------------------------------------------------------------------
   const token = request.cookies.get("token")?.value;
   const isPublic = publicRoutes.some((r) => pathNoLocale.startsWith(r));
 
@@ -90,8 +83,9 @@ export function middleware(request: NextRequest) {
         return response;
       }
 
-      const roles = payload.roles as UserRole[];
+      const roles = payload.roles;
 
+      // Client redirection
       if (
         roles.includes(UserRole.CLIENT) &&
         !roles.some((r) =>
@@ -102,6 +96,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
       }
 
+      // Admin/Editor/Support
       if (
         roles.some((r) =>
           [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
@@ -115,9 +110,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // --------------------------------------------------------------------
   // Protected routes
-  // --------------------------------------------------------------------
   const isProtected =
     pathNoLocale.startsWith("/dashboard") ||
     pathNoLocale.startsWith("/users");
@@ -141,8 +134,9 @@ export function middleware(request: NextRequest) {
       return response;
     }
 
-    const roles = payload.roles as UserRole[];
+    const roles = payload.roles;
 
+    // Client -> dashboard restriction
     if (
       pathNoLocale.startsWith("/dashboard") &&
       roles.includes(UserRole.CLIENT) &&
@@ -154,6 +148,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
+    // Admin/Edit/Support -> profile restriction
     if (
       pathNoLocale.startsWith("/users/profile") &&
       roles.some((r) =>
