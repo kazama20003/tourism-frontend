@@ -286,7 +286,7 @@ export default function TransportDetailPage({
                 productImage={mainImage}
                 productDescription={transport.description}
                 unitPrice={transport.currentPrice}
-                availabilityType={hasAvailableDates ? "fixed_dates" : "always_available"}
+                availabilityType={hasAvailableDates ? "fixed_dates" : "unlimited"}
                 availableDates={availableDates}
                 className="w-full"
                 triggerChildren={
