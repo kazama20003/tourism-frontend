@@ -44,15 +44,19 @@ export default function middleware(request: NextRequest) {
   const pathNoLocale = getPathWithoutLocale(pathname);
 
   // --------------------------------------------------------------------
-  // FIX DEFINITIVO: Evitar loop /es ↔ /es/
+  // FIX REAL DEL LOOP /es ↔ /es/
   // --------------------------------------------------------------------
-  if (locale && (pathname === `/${locale}` || pathname === `/${locale}/`)) {
-    // Normalizamos SIEMPRE a `/${locale}/`
-    if (!pathname.endsWith("/")) {
-      url.pathname = `/${locale}/`;
-      return NextResponse.redirect(url);
+  if (locale) {
+    const normalized = `/${locale}/`;
+
+    // Si estamos EXACTAMENTE en /es o /es/, normalizamos una sola vez
+    if (pathname === `/${locale}` || pathname === `/${locale}/`) {
+      if (pathname !== normalized) {
+        url.pathname = normalized;
+        return NextResponse.redirect(url);
+      }
+      return NextResponse.next(); // /es/ ya normalizado → no redirigir más
     }
-    return NextResponse.next();
   }
 
   // --------------------------------------------------------------------
@@ -72,7 +76,7 @@ export default function middleware(request: NextRequest) {
   }
 
   // --------------------------------------------------------------------
-  // Public routes: login/register/forgot-password
+  // Public routes
   // --------------------------------------------------------------------
   const token = request.cookies.get("token")?.value;
   const isPublic = publicRoutes.some((r) => pathNoLocale.startsWith(r));
@@ -82,37 +86,36 @@ export default function middleware(request: NextRequest) {
       const payload = decodeJwtPayload(token);
 
       if (!payload) {
-        // FIX LOOP: token inválido → eliminar cookie
+        // FIX: token inválido → eliminar cookie → NO LOOP
         const response = NextResponse.redirect(`/${locale}/login`);
         response.cookies.delete("token");
         return response;
       }
 
-      if (payload.roles) {
-        const roles = payload.roles as UserRole[];
+      const roles = payload.roles as UserRole[];
 
-        // CLIENT → /users/profile
-        if (
-          roles.includes(UserRole.CLIENT) &&
-          !roles.some((r) =>
-            [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
-          )
-        ) {
-          url.pathname = `/${locale}/users/profile`;
-          return NextResponse.redirect(url);
-        }
+      // CLIENT → /users/profile
+      if (
+        roles.includes(UserRole.CLIENT) &&
+        !roles.some((r) =>
+          [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
+        )
+      ) {
+        url.pathname = `/${locale}/users/profile`;
+        return NextResponse.redirect(url);
+      }
 
-        // ADMIN/EDITOR/SUPPORT → /dashboard
-        if (
-          roles.some((r) =>
-            [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
-          )
-        ) {
-          url.pathname = `/${locale}/dashboard`;
-          return NextResponse.redirect(url);
-        }
+      // ADMIN/EDITOR/SUPPORT → /dashboard
+      if (
+        roles.some((r) =>
+          [UserRole.ADMIN, UserRole.EDITOR, UserRole.SUPPORT].includes(r)
+        )
+      ) {
+        url.pathname = `/${locale}/dashboard`;
+        return NextResponse.redirect(url);
       }
     }
+
     return NextResponse.next();
   }
 
@@ -131,13 +134,13 @@ export default function middleware(request: NextRequest) {
     const payload = decodeJwtPayload(token);
 
     if (!payload) {
-      // FIX LOOP: token inválido → eliminar cookie
+      // FIX: token inválido → eliminar y redirigir → NO LOOP
       const response = NextResponse.redirect(`/${locale}/login`);
       response.cookies.delete("token");
       return response;
     }
 
-    // Token expired
+    // Token expirado
     if (Date.now() >= payload.exp * 1000) {
       const response = NextResponse.redirect(`/${locale}/login`);
       response.cookies.delete("token");
@@ -158,7 +161,7 @@ export default function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // ADMIN intentando entrar al profile de usuario
+    // ADMIN/EDITOR/SUPPORT intentando entrar /users/profile
     if (
       pathNoLocale.startsWith("/users/profile") &&
       roles.some((r) =>
