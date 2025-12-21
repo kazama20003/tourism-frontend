@@ -59,22 +59,6 @@ export default function NewTourPage() {
   const [includesInput, setIncludesInput] = useState("")
   const [excludesInput, setExcludesInput] = useState("")
 
-  const [itineraryItems, setItineraryItems] = useState<
-    Array<{
-      order: number
-      title: string
-      description: string
-      durationHours?: number
-      activities?: string
-      meals: {
-        breakfast: boolean
-        lunch: boolean
-        dinner: boolean
-      }
-      hotelNight: boolean
-    }>
-  >([])
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -142,23 +126,25 @@ export default function NewTourPage() {
   }
 
   const addItineraryDay = () => {
-    const newDay = {
-      order: itineraryItems.length + 1,
-      title: "",
-      description: "",
-      durationHours: undefined,
-      activities: "",
-      meals: { breakfast: false, lunch: false, dinner: false },
-      hotelNight: false,
-    }
-    setItineraryItems([...itineraryItems, newDay])
-  }
-
-  const removeItineraryDay = (index: number) => {
-    const updated = itineraryItems.filter((_, i) => i !== index)
-    // Reordenar
-    const reordered = updated.map((item, i) => ({ ...item, order: i + 1 }))
-    setItineraryItems(reordered)
+    setFormData({
+      ...formData,
+      itinerary: [
+        ...(formData.itinerary || []),
+        {
+          order: (formData.itinerary || []).length + 1,
+          title: "",
+          description: "",
+          durationHours: undefined,
+          activities: [],
+          meals: {
+            breakfast: false,
+            lunch: false,
+            dinner: false,
+          },
+          hotelNight: false,
+        },
+      ],
+    })
   }
 
   const updateItineraryDay = (
@@ -166,11 +152,63 @@ export default function NewTourPage() {
     field: string,
     value: string | number | boolean | string[] | undefined,
   ) => {
-    setItineraryItems((prev) => {
-      const updated = [...prev]
+    const updated = [...(formData.itinerary || [])]
+
+    if (field.includes(".")) {
+      const [parent, child] = field.split(".")
+      if (parent === "meals") {
+        // Manejo específico para meals con tipos correctos
+        updated[index] = {
+          ...updated[index],
+          meals: {
+            breakfast: updated[index].meals?.breakfast || false,
+            lunch: updated[index].meals?.lunch || false,
+            dinner: updated[index].meals?.dinner || false,
+            [child]: value === true,
+          },
+        }
+      }
+    } else {
       updated[index] = { ...updated[index], [field]: value }
-      return updated
+    }
+    setFormData({ ...formData, itinerary: updated })
+  }
+
+  const addActivity = (dayIndex: number) => {
+    setFormData((prev) => {
+      const updated = [...(prev.itinerary || [])]
+      updated[dayIndex] = {
+        ...updated[dayIndex],
+        activities: [...(updated[dayIndex].activities || []), ""],
+      }
+      return { ...prev, itinerary: updated }
     })
+  }
+
+  const updateActivity = (dayIndex: number, activityIndex: number, value: string) => {
+    setFormData((prev) => {
+      const updated = [...(prev.itinerary || [])]
+      const activities = [...(updated[dayIndex].activities || [])]
+      activities[activityIndex] = value
+      updated[dayIndex] = { ...updated[dayIndex], activities }
+      return { ...prev, itinerary: updated }
+    })
+  }
+
+  const removeActivity = (dayIndex: number, activityIndex: number) => {
+    setFormData((prev) => {
+      const updated = [...(prev.itinerary || [])]
+      const activities = (updated[dayIndex].activities || []).filter((_: string, i: number) => i !== activityIndex)
+      updated[dayIndex] = { ...updated[dayIndex], activities }
+      return { ...prev, itinerary: updated }
+    })
+  }
+
+  const removeItineraryDay = (dayIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      itinerary: prev.itinerary?.filter((_, i) => i !== dayIndex),
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,17 +219,12 @@ export default function NewTourPage() {
       return
     }
 
-    const parsedItinerary = itineraryItems.map((item) => ({
+    const parsedItinerary = (formData.itinerary || []).map((item) => ({
       order: item.order,
       title: item.title,
       description: item.description,
       durationHours: item.durationHours,
-      activities: item.activities
-        ? item.activities
-            .split(",")
-            .map((a) => a.trim())
-            .filter(Boolean)
-        : undefined,
+      activities: item.activities, // Ya es un array
       meals: item.meals,
       hotelNight: item.hotelNight,
     }))
@@ -472,12 +505,12 @@ export default function NewTourPage() {
                 <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-900 mb-4">
                   <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                   <p className="text-xs text-blue-800 dark:text-blue-300">
-                    Agrega cada día del itinerario con todos sus detalles: título, descripción, duración, actividades,
-                    comidas incluidas y si incluye noche de hotel. Todo el contenido se traducirá automáticamente.
+                    Agrega cada día del itinerario con todos sus detalles. Usa los botones para agregar múltiples
+                    actividades fácilmente.
                   </p>
                 </div>
 
-                {itineraryItems.length === 0 ? (
+                {(formData.itinerary || []).length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
                     <p className="text-muted-foreground mb-4">No hay días agregados al itinerario</p>
                     <Button type="button" onClick={addItineraryDay} variant="outline">
@@ -487,129 +520,188 @@ export default function NewTourPage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {itineraryItems.map((item, index) => (
-                      <Card key={index} className="border-2">
-                        <CardHeader className="pb-3">
+                    {(formData.itinerary || []).map((item, dayIndex) => (
+                      <Card key={dayIndex} className="border-2">
+                        <CardHeader className="pb-3 bg-muted/30">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">Día {item.order}</CardTitle>
+                            <CardTitle className="text-lg font-semibold">Día {item.order}</CardTitle>
                             <Button
                               type="button"
                               variant="destructive"
                               size="sm"
-                              onClick={() => removeItineraryDay(index)}
+                              onClick={() => removeItineraryDay(dayIndex)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Eliminar Día
                             </Button>
                           </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-5 pt-6">
+                          {/* Título y Duración */}
                           <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                              <Label htmlFor={`day-${index}-title`}>Título del Día *</Label>
+                              <Label htmlFor={`day-${dayIndex}-title`} className="font-medium">
+                                Título del Día <span className="text-destructive">*</span>
+                              </Label>
                               <Input
-                                id={`day-${index}-title`}
+                                id={`day-${dayIndex}-title`}
                                 value={item.title}
-                                onChange={(e) => updateItineraryDay(index, "title", e.target.value)}
+                                onChange={(e) => updateItineraryDay(dayIndex, "title", e.target.value)}
                                 placeholder="Ej: Llegada a Lima y City Tour"
                                 required
+                                className="h-10"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`day-${index}-duration`}>Duración (horas)</Label>
+                              <Label htmlFor={`day-${dayIndex}-duration`} className="font-medium">
+                                Duración Aproximada (horas)
+                              </Label>
                               <Input
-                                id={`day-${index}-duration`}
+                                id={`day-${dayIndex}-duration`}
                                 type="number"
                                 min="0"
                                 step="0.5"
                                 value={item.durationHours || ""}
                                 onChange={(e) =>
                                   updateItineraryDay(
-                                    index,
+                                    dayIndex,
                                     "durationHours",
                                     e.target.value ? Number.parseFloat(e.target.value) : undefined,
                                   )
                                 }
                                 placeholder="Ej: 8"
+                                className="h-10"
                               />
                             </div>
                           </div>
 
+                          {/* Descripción */}
                           <div className="space-y-2">
-                            <Label htmlFor={`day-${index}-description`}>Descripción del Día *</Label>
+                            <Label htmlFor={`day-${dayIndex}-description`} className="font-medium">
+                              Descripción del Día <span className="text-destructive">*</span>
+                            </Label>
                             <Textarea
-                              id={`day-${index}-description`}
+                              id={`day-${dayIndex}-description`}
                               value={item.description}
-                              onChange={(e) => updateItineraryDay(index, "description", e.target.value)}
+                              onChange={(e) => updateItineraryDay(dayIndex, "description", e.target.value)}
                               rows={3}
-                              placeholder="Describe en detalle las actividades de este día..."
+                              placeholder="Describe en detalle las actividades y experiencias de este día..."
                               required
+                              className="resize-none"
                             />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`day-${index}-activities`}>Actividades (separadas por comas)</Label>
-                            <Input
-                              id={`day-${index}-activities`}
-                              value={item.activities || ""}
-                              onChange={(e) => updateItineraryDay(index, "activities", e.target.value)}
-                              placeholder="Ej: Visita al centro histórico, Museo Nacional, Plaza Mayor"
-                            />
-                            <p className="text-sm text-muted-foreground">Lista de actividades separadas por comas</p>
                           </div>
 
                           <div className="space-y-3">
-                            <Label>Comidas Incluidas</Label>
+                            <div className="flex items-center justify-between">
+                              <Label className="font-medium">Actividades del Día</Label>
+                              <Button type="button" variant="outline" size="sm" onClick={() => addActivity(dayIndex)}>
+                                <Plus className="h-3 w-3 mr-1" />
+                                Agregar Actividad
+                              </Button>
+                            </div>
+
+                            {(item.activities || []).length === 0 ? (
+                              <div className="text-center py-6 border-2 border-dashed rounded-lg bg-muted/20">
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  No hay actividades agregadas para este día
+                                </p>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => addActivity(dayIndex)}>
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Agregar Primera Actividad
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {(item.activities || []).map((activity, activityIndex) => (
+                                  <div key={activityIndex} className="flex gap-2 items-center">
+                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                                      {activityIndex + 1}
+                                    </div>
+                                    <Input
+                                      value={activity}
+                                      onChange={(e) => updateActivity(dayIndex, activityIndex, e.target.value)}
+                                      placeholder={`Ej: ${activityIndex === 0 ? "Visita al centro histórico" : activityIndex === 1 ? "Recorrido por el museo" : "Tour gastronómico"}`}
+                                      className="h-9"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeActivity(dayIndex, activityIndex)}
+                                      className="flex-shrink-0"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Comidas Incluidas */}
+                          <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+                            <Label className="font-medium">Comidas Incluidas</Label>
                             <div className="flex flex-wrap gap-4">
                               <div className="flex items-center gap-2">
                                 <Checkbox
-                                  id={`day-${index}-breakfast`}
-                                  checked={item.meals.breakfast}
-                                  onCheckedChange={(checked) => updateItineraryDay(index, "meals.breakfast", checked)}
+                                  id={`day-${dayIndex}-breakfast`}
+                                  checked={item.meals?.breakfast || false}
+                                  onCheckedChange={(checked) =>
+                                    updateItineraryDay(dayIndex, "meals.breakfast", checked)
+                                  }
                                 />
-                                <Label htmlFor={`day-${index}-breakfast`} className="cursor-pointer font-normal">
-                                  Desayuno
+                                <Label htmlFor={`day-${dayIndex}-breakfast`} className="cursor-pointer font-normal">
+                                  🌅 Desayuno
                                 </Label>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Checkbox
-                                  id={`day-${index}-lunch`}
-                                  checked={item.meals.lunch}
-                                  onCheckedChange={(checked) => updateItineraryDay(index, "meals.lunch", checked)}
+                                  id={`day-${dayIndex}-lunch`}
+                                  checked={item.meals?.lunch || false}
+                                  onCheckedChange={(checked) => updateItineraryDay(dayIndex, "meals.lunch", checked)}
                                 />
-                                <Label htmlFor={`day-${index}-lunch`} className="cursor-pointer font-normal">
-                                  Almuerzo
+                                <Label htmlFor={`day-${dayIndex}-lunch`} className="cursor-pointer font-normal">
+                                  ☀️ Almuerzo
                                 </Label>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Checkbox
-                                  id={`day-${index}-dinner`}
-                                  checked={item.meals.dinner}
-                                  onCheckedChange={(checked) => updateItineraryDay(index, "meals.dinner", checked)}
+                                  id={`day-${dayIndex}-dinner`}
+                                  checked={item.meals?.dinner || false}
+                                  onCheckedChange={(checked) => updateItineraryDay(dayIndex, "meals.dinner", checked)}
                                 />
-                                <Label htmlFor={`day-${index}-dinner`} className="cursor-pointer font-normal">
-                                  Cena
+                                <Label htmlFor={`day-${dayIndex}-dinner`} className="cursor-pointer font-normal">
+                                  🌙 Cena
                                 </Label>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          {/* Noche de Hotel */}
+                          <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                             <Checkbox
-                              id={`day-${index}-hotel`}
+                              id={`day-${dayIndex}-hotel`}
                               checked={item.hotelNight}
-                              onCheckedChange={(checked) => updateItineraryDay(index, "hotelNight", checked as boolean)}
+                              onCheckedChange={(checked) =>
+                                updateItineraryDay(dayIndex, "hotelNight", checked as boolean)
+                              }
                             />
-                            <Label htmlFor={`day-${index}-hotel`} className="cursor-pointer font-normal">
-                              Incluye noche de hotel
+                            <Label htmlFor={`day-${dayIndex}-hotel`} className="cursor-pointer font-normal">
+                              🏨 Este día incluye noche de hotel
                             </Label>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
 
-                    <Button type="button" onClick={addItineraryDay} variant="outline" className="w-full bg-transparent">
+                    <Button
+                      type="button"
+                      onClick={addItineraryDay}
+                      variant="outline"
+                      className="w-full h-12 bg-transparent"
+                    >
                       <Plus className="mr-2 h-4 w-4" />
-                      Agregar Otro Día
+                      Agregar Otro Día al Itinerario
                     </Button>
                   </div>
                 )}
