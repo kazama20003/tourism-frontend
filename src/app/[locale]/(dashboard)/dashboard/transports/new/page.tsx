@@ -168,7 +168,21 @@ export default function NewTourPage() {
   ) => {
     setItineraryItems((prev) => {
       const updated = [...prev]
-      updated[index] = { ...updated[index], [field]: value }
+
+      // Manejar campos anidados (ej: "meals.breakfast")
+      if (field.includes(".")) {
+        const [parent, child] = field.split(".")
+        updated[index] = {
+          ...updated[index],
+          [parent]: {
+            ...(updated[index][parent as keyof (typeof updated)[number]] as Record<string, unknown>),
+            [child]: value,
+          },
+        }
+      } else {
+        updated[index] = { ...updated[index], [field]: value }
+      }
+
       return updated
     })
   }
