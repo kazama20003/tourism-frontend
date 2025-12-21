@@ -32,7 +32,6 @@ import { useMyOrders } from "@/hooks/use-orders"
 import { useCart } from "@/hooks/use-cart"
 import { toast } from "sonner"
 import type { UpdateUserDto } from "@/types/user"
-
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger)
 }

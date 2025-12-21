@@ -5,7 +5,6 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { useCart } from "@/hooks/use-cart"
 import { usePayment } from "@/hooks/use-payment"
-import { OrderStatus, PaymentStatus } from "@/types/order"
 import type { CreateOrderDto, OrderItem } from "@/types/order"
 import type { CartItem, Cart } from "@/types/cart"
 import { offersService } from "@/services/offers-service"
@@ -13,7 +12,7 @@ import { ArrowLeft, CreditCard, ShoppingBag, Loader2, CheckCircle2, XCircle, Tag
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
-
+import { OrderStatus,PaymentStatus } from "@/types/order"
 declare global {
   interface Window {
     KR?: {
@@ -258,6 +257,9 @@ export default function CheckoutPage() {
       items: orderItems,
       subtotal: Math.round(calculatedSubtotal),
       grandTotal: Math.round(calculatedGrandTotal),
+      status: OrderStatus.PENDING,
+      paymentStatus: PaymentStatus.PENDING,
+
       currency: "USD",
       cartId: cartData._id,
     }
@@ -339,7 +341,7 @@ export default function CheckoutPage() {
             Tu reservación ha sido confirmada. Revisa tu email para más detalles.
           </p>
           <Link
-            href="/users/reservations"
+            href="/users/profile"
             className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground text-sm font-medium tracking-widest uppercase hover:scale-[1.02] transition-all"
           >
             Ver Mis Reservaciones
