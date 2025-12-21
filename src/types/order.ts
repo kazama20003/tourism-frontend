@@ -37,8 +37,6 @@ export interface Order {
   discountTotal?: number
   grandTotal: number
   currency?: string
-  status: OrderStatus
-  paymentStatus: PaymentStatus
   paymentMethod?: string
   notes?: string
   confirmationCode?: string

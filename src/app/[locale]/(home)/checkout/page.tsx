@@ -260,8 +260,6 @@ export default function CheckoutPage() {
       grandTotal: Math.round(calculatedGrandTotal),
       currency: "USD",
       cartId: cartData._id,
-      status: OrderStatus.PENDING,
-      paymentStatus: PaymentStatus.PENDING,
     }
   }
 
