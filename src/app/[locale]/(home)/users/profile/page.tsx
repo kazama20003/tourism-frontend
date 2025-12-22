@@ -23,14 +23,12 @@ import {
 import Link from "next/link"
 import { useProfile, useUpdateProfile } from "@/hooks/use-auth"
 import { useMyOrders } from "@/hooks/use-orders"
-import { useCart } from "@/hooks/use-cart"
 import type { OrderStatus, Tour, Transport } from "@/types/order"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile")
   const { data: userData } = useProfile()
   const { data: ordersData, isLoading: ordersLoading } = useMyOrders()
-  const { isLoading: _cartLoading } = useCart()
   const { trigger: updateProfile, isMutating: isUpdating } = useUpdateProfile()
 
   const [isEditing, setIsEditing] = useState(false)
