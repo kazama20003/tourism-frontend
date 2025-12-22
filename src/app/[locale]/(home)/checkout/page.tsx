@@ -5,14 +5,14 @@ import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { useCart } from "@/hooks/use-cart"
 import { usePayment } from "@/hooks/use-payment"
-import type { CreateOrderDto, OrderItem } from "@/types/order"
+import type { CreateOrderDto, CreateOrderItem } from "@/types/order"
 import type { CartItem, Cart } from "@/types/cart"
 import { offersService } from "@/services/offers-service"
 import { ArrowLeft, CreditCard, ShoppingBag, Loader2, CheckCircle2, XCircle, Tag, X, Info } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
-import { OrderStatus,PaymentStatus } from "@/types/order"
+import { OrderStatus, PaymentStatus } from "@/types/order"
 declare global {
   interface Window {
     KR?: {
@@ -214,7 +214,7 @@ export default function CheckoutPage() {
 
     const calculatedGrandTotal = calculatedSubtotal - discount
 
-    const orderItems: OrderItem[] = cartData.items.map((item: CartItem) => {
+    const orderItems: CreateOrderItem[] = cartData.items.map((item: CartItem) => {
       let productIdString: string
 
       if (typeof item.productId === "string") {
