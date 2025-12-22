@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import Image from "next/image"
 
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,7 +26,8 @@ import Link from "next/link"
 import { useProfile, useUpdateProfile } from "@/hooks/use-auth"
 import { useMyOrders } from "@/hooks/use-orders"
 import { useCart } from "@/hooks/use-cart"
-import type { OrderStatus, Tour, Transport } from "@/types/order"
+import type { OrderStatus, Tour, Transport, OrderItem } from "@/types/order"
+import { CartItem } from "@/types/cart"
 import { toast } from "sonner"
 
 export default function ProfilePage() {
@@ -150,6 +152,32 @@ export default function ProfilePage() {
       return productId._id || "Unknown Product"
     }
     return "Unknown Product"
+  }
+
+  const getProductImage = (productId: string | Tour | Transport): string | undefined => {
+    if (typeof productId === "object" && productId && "images" in productId) {
+      return productId.images?.[0]
+    }
+    return undefined
+  }
+
+  const getProductSlug = (productId: string | Tour | Transport): string | undefined => {
+    if (typeof productId === "object" && productId && "slug" in productId) {
+      return productId.slug
+    }
+    return undefined
+  }
+
+  const getProductLink = (item: OrderItem | CartItem): string | null => {
+    const slug = getProductSlug(item.productId)
+    if (!slug) return null
+
+    if (item.productType === "Tour") {
+      return `/tours/${slug}`
+    } else if (item.productType === "Transport") {
+      return `/transports/${slug}`
+    }
+    return null
   }
 
   const extractProductId = (productId: string | { _id: string }): string => {
@@ -316,7 +344,7 @@ export default function ProfilePage() {
             ) : Array.isArray(ordersData) && ordersData.length > 0 ? (
               <div className="space-y-4">
                 {ordersData.map((order) => (
-                  <div key={order._id} className="bg-secondary p-6 rounded-lg">
+                  <div key={order._id} className="bg-secondary p-6">
                     <div className="flex flex-col md:flex-row md:items-start gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
@@ -324,7 +352,7 @@ export default function ProfilePage() {
                             {order.confirmationCode || order._id}
                           </span>
                           <span
-                            className={`text-[10px] px-2 py-1 rounded-full font-medium uppercase tracking-wider flex items-center gap-1 ${getStatusColor(order.status)}`}
+                            className={`text-[10px] px-2 py-1 font-medium uppercase tracking-wider flex items-center gap-1 ${getStatusColor(order.status)}`}
                           >
                             {getStatusIcon(order.status)}
                             {order.status}
@@ -334,6 +362,8 @@ export default function ProfilePage() {
                         <div className="space-y-4">
                           {order.items.map((item, idx) => {
                             const productTitle = getProductTitle(item.productId)
+                            const productImage = getProductImage(item.productId)
+                            const productLink = getProductLink(item)
                             const detailsText = [
                               item.productType,
                               item.adults && `Adults: ${item.adults}`,
@@ -345,8 +375,27 @@ export default function ProfilePage() {
 
                             return (
                               <div key={idx} className="flex gap-4 pb-4 border-b border-border last:border-0">
+                                {productImage && (
+                                  <div className="w-24 h-24 shrink-0 bg-muted overflow-hidden">
+                                    <Image
+                                      src={productImage || "/placeholder.svg"}
+                                      alt={productTitle}
+                                      width={96}
+                                      height={96}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
                                 <div className="flex-1">
-                                  <h4 className="font-serif text-foreground mb-1">{productTitle}</h4>
+                                  {productLink ? (
+                                    <Link href={productLink}>
+                                      <h4 className="font-serif text-foreground mb-1 hover:text-accent transition-colors">
+                                        {productTitle}
+                                      </h4>
+                                    </Link>
+                                  ) : (
+                                    <h4 className="font-serif text-foreground mb-1">{productTitle}</h4>
+                                  )}
                                   <p className="text-sm text-muted-foreground mb-2">{detailsText}</p>
                                   {item.travelDate && (
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -385,7 +434,7 @@ export default function ProfilePage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-secondary p-12 text-center rounded-lg">
+              <div className="bg-secondary p-12 text-center">
                 <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">No orders yet</p>
                 <Link
@@ -420,6 +469,8 @@ export default function ProfilePage() {
               <div className="space-y-4">
                 {cart.items.map((item, idx) => {
                   const productTitle = getProductTitle(item.productId)
+                  const productImage = getProductImage(item.productId)
+                  const productLink = getProductLink(item)
                   const productId = extractProductId(item.productId)
                   const detailsText = [
                     item.productType,
@@ -431,10 +482,29 @@ export default function ProfilePage() {
                     .join(" • ")
 
                   return (
-                    <div key={idx} className="bg-secondary p-6 rounded-lg">
+                    <div key={idx} className="bg-secondary p-6">
                       <div className="flex gap-4">
+                        {productImage && (
+                          <div className="w-32 h-32 shrink-0 bg-muted overflow-hidden">
+                            <Image
+                              src={productImage || "/placeholder.svg"}
+                              alt={productTitle}
+                              width={128}
+                              height={128}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
                         <div className="flex-1">
-                          <h4 className="font-serif text-foreground mb-1 text-lg">{productTitle}</h4>
+                          {productLink ? (
+                            <Link href={productLink}>
+                              <h4 className="font-serif text-foreground mb-1 text-lg hover:text-accent transition-colors">
+                                {productTitle}
+                              </h4>
+                            </Link>
+                          ) : (
+                            <h4 className="font-serif text-foreground mb-1 text-lg">{productTitle}</h4>
+                          )}
                           <p className="text-sm text-muted-foreground mb-2">{detailsText}</p>
                           {item.travelDate && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -466,7 +536,7 @@ export default function ProfilePage() {
                   )
                 })}
 
-                <div className="bg-secondary p-6 rounded-lg">
+                <div className="bg-secondary p-6">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-muted-foreground">Subtotal:</span>
                     <span className="text-foreground">${cart.subtotal?.toFixed(2) || "0.00"}</span>
@@ -479,23 +549,20 @@ export default function ProfilePage() {
                     <span className="text-foreground">Total:</span>
                     <span className="text-foreground">${cart.totalPrice?.toFixed(2) || "0.00"}</span>
                   </div>
-                  <Link
-                    href="/checkout"
-                    className="inline-block w-full mt-4 px-6 py-3 bg-primary text-primary-foreground text-center text-xs font-medium tracking-widest uppercase hover:scale-[1.02] transition-all"
-                  >
+                  <Button className="w-full mt-6 text-xs font-medium tracking-widest uppercase">
                     Proceed to Checkout
-                  </Link>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <div className="bg-secondary p-12 text-center rounded-lg">
+              <div className="bg-secondary p-12 text-center">
                 <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">Your cart is empty</p>
                 <Link
                   href="/tours"
                   className="inline-block px-6 py-3 bg-primary text-primary-foreground text-xs font-medium tracking-widest uppercase hover:scale-[1.02] transition-all"
                 >
-                  Discover Tours
+                  Browse Tours
                 </Link>
               </div>
             )}
