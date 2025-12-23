@@ -9,7 +9,10 @@ import { v4 as uuidv4 } from "uuid"
 const CART_SESSION_KEY = "cart_session_id"
 const CART_KEY = "cart"
 
-// Genera o recupera el sessionId
+// =======================================================
+// Helpers
+// =======================================================
+
 const getOrCreateSessionId = (): string => {
   if (typeof window === "undefined") return ""
 
@@ -21,7 +24,6 @@ const getOrCreateSessionId = (): string => {
   return sessionId
 }
 
-// Elimina el sessionId del localStorage
 const clearSessionId = (): void => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(CART_SESSION_KEY)
@@ -29,10 +31,7 @@ const clearSessionId = (): void => {
 }
 
 const extractProductId = (productId: CartItem["productId"]): string => {
-  if (typeof productId === "string") {
-    return productId
-  }
-  return productId._id
+  return typeof productId === "string" ? productId : productId._id
 }
 
 const sanitizeCartItem = (item: CartItem): CreateCartItemDto => {
@@ -43,7 +42,6 @@ const sanitizeCartItem = (item: CartItem): CreateCartItemDto => {
     totalPrice: item.totalPrice,
   }
 
-  // Solo incluir campos opcionales si existen
   if (item.travelDate) sanitized.travelDate = item.travelDate
   if (item.adults !== undefined) sanitized.adults = item.adults
   if (item.children !== undefined) sanitized.children = item.children
@@ -54,6 +52,10 @@ const sanitizeCartItem = (item: CartItem): CreateCartItemDto => {
   return sanitized
 }
 
+// =======================================================
+// Hook principal
+// =======================================================
+
 export function useCart() {
   const [sessionId, setSessionId] = useState<string>("")
   const queryClient = useQueryClient()
@@ -62,12 +64,7 @@ export function useCart() {
     setSessionId(getOrCreateSessionId())
   }, [])
 
-  // Query para obtener el carrito actual
-  const {
-    data: cart,
-    error,
-    isLoading,
-  } = useQuery<Cart | null>({
+  const { data: cart, isLoading, error } = useQuery<Cart | null>({
     queryKey: [CART_KEY, sessionId],
     queryFn: () => cartService.getCurrentCart(sessionId),
     enabled: !!sessionId,
@@ -75,137 +72,128 @@ export function useCart() {
     refetchOnReconnect: false,
   })
 
-  // Mutation para agregar item
+  // =======================================================
+  // Helper: invalidar todas las queries relacionadas
+  // =======================================================
+
+  const invalidateCartQueries = () => {
+    queryClient.invalidateQueries({ queryKey: [CART_KEY] })
+    queryClient.invalidateQueries({ queryKey: [CART_KEY, sessionId] })
+  }
+
+  // =======================================================
+  // MUTATIONS
+  // =======================================================
+
+  // ADD ITEM
   const addItemMutation = useMutation({
     mutationFn: async (item: CreateCartItemDto) => {
-      console.log("[v0] Adding item to cart:", item)
+      const currentCart = queryClient.getQueryData<Cart | null>([CART_KEY, sessionId])
 
-      if (!cart) {
-        // Crear nuevo carrito con el item
+      if (!currentCart) {
         return cartService.createCart({
           sessionId,
           items: [item],
         })
-      } else {
-        const existingItems = cart.items.map(sanitizeCartItem)
-        const updatedItems = [...existingItems, item]
-
-        console.log("[v0] Updating cart with sanitized items:", updatedItems)
-
-        return cartService.updateCart(cart._id, {
-          items: updatedItems,
-        })
       }
-    },
-    onSuccess: (updatedCart) => {
-      queryClient.setQueryData([CART_KEY, sessionId], updatedCart)
-    },
-  })
 
-  // Mutation para remover item
-  const removeItemMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      if (!cart) throw new Error("No cart found")
-
-      const updatedItems = cart.items
-        .filter((item) => extractProductId(item.productId) !== productId)
-        .map(sanitizeCartItem)
-
-      // Si no quedan items, eliminar el carrito
-      if (updatedItems.length === 0) {
-        await cartService.deleteCart(cart._id)
-        clearSessionId()
-        setSessionId(getOrCreateSessionId())
-        return null
-      } else {
-        return cartService.updateCart(cart._id, {
-          items: updatedItems,
-        })
-      }
-    },
-    onSuccess: (updatedCart) => {
-      queryClient.setQueryData([CART_KEY, sessionId], updatedCart)
-    },
-  })
-
-  // Mutation para actualizar item
-  const updateItemMutation = useMutation({
-    mutationFn: async ({ productId, updates }: { productId: string; updates: Partial<CreateCartItemDto> }) => {
-      if (!cart) throw new Error("No cart found")
-
-      const updatedItems = cart.items
-        .map((item) => (extractProductId(item.productId) === productId ? { ...item, ...updates } : item))
-        .map(sanitizeCartItem)
-
-      return cartService.updateCart(cart._id, {
-        items: updatedItems,
+      const sanitized = currentCart.items.map(sanitizeCartItem)
+      return cartService.updateCart(currentCart._id, {
+        items: [...sanitized, item],
       })
     },
     onSuccess: (updatedCart) => {
       queryClient.setQueryData([CART_KEY, sessionId], updatedCart)
+      invalidateCartQueries()
     },
   })
 
-  // Mutation para limpiar carrito
+  // REMOVE ITEM
+  const removeItemMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const currentCart = queryClient.getQueryData<Cart | null>([CART_KEY, sessionId])
+      if (!currentCart) throw new Error("No cart found")
+
+      const updatedItems = currentCart.items
+        .filter((item) => extractProductId(item.productId) !== productId)
+        .map(sanitizeCartItem)
+
+      if (updatedItems.length === 0) {
+        await cartService.deleteCart(currentCart._id)
+        clearSessionId()
+        setSessionId(getOrCreateSessionId())
+        return null
+      }
+
+      return cartService.updateCart(currentCart._id, { items: updatedItems })
+    },
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData([CART_KEY, sessionId], updatedCart)
+      invalidateCartQueries()
+    },
+  })
+
+  // UPDATE ITEM
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ productId, updates }: { productId: string; updates: Partial<CreateCartItemDto> }) => {
+      const currentCart = queryClient.getQueryData<Cart | null>([CART_KEY, sessionId])
+      if (!currentCart) throw new Error("No cart found")
+
+      const updatedItems = currentCart.items
+        .map((item) =>
+          extractProductId(item.productId) === productId ? { ...item, ...updates } : item,
+        )
+        .map(sanitizeCartItem)
+
+      return cartService.updateCart(currentCart._id, { items: updatedItems })
+    },
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData([CART_KEY, sessionId], updatedCart)
+      invalidateCartQueries()
+    },
+  })
+
+  // CLEAR CART
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      if (!cart) throw new Error("No cart found")
+      const currentCart = queryClient.getQueryData<Cart | null>([CART_KEY, sessionId])
+      if (!currentCart) throw new Error("No cart found")
 
-      await cartService.deleteCart(cart._id)
+      await cartService.deleteCart(currentCart._id)
       clearSessionId()
       setSessionId(getOrCreateSessionId())
       return null
     },
     onSuccess: () => {
       queryClient.setQueryData([CART_KEY, sessionId], null)
+      invalidateCartQueries()
     },
   })
 
-  // Funciones helper
+  // =======================================================
+  // API helpers expuestos
+  // =======================================================
+
   const addItem = useCallback(
-    async (item: CreateCartItemDto) => {
-      try {
-        return await addItemMutation.mutateAsync(item)
-      } catch (error) {
-        console.error("[v0] Error adding item to cart:", error)
-        throw error
-      }
-    },
+    (item: CreateCartItemDto) => addItemMutation.mutateAsync(item),
     [addItemMutation],
   )
 
   const removeItem = useCallback(
-    async (productId: string) => {
-      try {
-        await removeItemMutation.mutateAsync(productId)
-      } catch (error) {
-        console.error("[v0] Error removing item from cart:", error)
-        throw error
-      }
-    },
+    (productId: string) => removeItemMutation.mutateAsync(productId),
     [removeItemMutation],
   )
 
   const updateItem = useCallback(
-    async (productId: string, updates: Partial<CreateCartItemDto>) => {
-      try {
-        return await updateItemMutation.mutateAsync({ productId, updates })
-      } catch (error) {
-        console.error("[v0] Error updating item in cart:", error)
-        throw error
-      }
-    },
+    (productId: string, updates: Partial<CreateCartItemDto>) =>
+      updateItemMutation.mutateAsync({ productId, updates }),
     [updateItemMutation],
   )
 
-  const clearCart = useCallback(async () => {
-    try {
-      await clearCartMutation.mutateAsync()
-    } catch (error) {
-      console.error("[v0] Error clearing cart:", error)
-      throw error
-    }
-  }, [clearCartMutation])
+  const clearCart = useCallback(
+    () => clearCartMutation.mutateAsync(),
+    [clearCartMutation],
+  )
 
   return {
     cart,
