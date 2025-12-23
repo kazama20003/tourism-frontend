@@ -1,26 +1,31 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
-import { getHeroSectionDictionary } from "@/lib/i18n/dictionaries/hero-section"
-import type { Locale } from "@/lib/i18n/config"
+import { useTranslation } from "@/lib/i18n/context"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
 gsap.registerPlugin(ScrollTrigger)
 
-interface HeroSectionProps {
-  locale: Locale
-}
-
-export function HeroSection({ locale }: HeroSectionProps) {
-  const translations = getHeroSectionDictionary(locale)
+export function HeroSection() {
+  const { dictionary } = useTranslation()
+  const translations = dictionary.heroSection
 
   const audioRef = useRef<HTMLAudioElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const buttonsRef = useRef<HTMLDivElement>(null)
   const [audioActive, setAudioActive] = useState(false)
 
   useEffect(() => {
     const audio = audioRef.current
+    const video = videoRef.current
+
+    if (video) {
+      video.play().catch(() => {
+        // Silenciar error de autoplay
+      })
+    }
+
     if (!audio) return
 
     const unlockAudio = () => {
@@ -51,13 +56,11 @@ export function HeroSection({ locale }: HeroSectionProps) {
 
   useEffect(() => {
     if (buttonsRef.current) {
-      // Ocultar los botones inicialmente
       gsap.set(buttonsRef.current, { y: 100, opacity: 0 })
 
-      // Animación que se activa con scroll
       ScrollTrigger.create({
         trigger: buttonsRef.current,
-        start: "top 90%", // Cuando el elemento está a 90% de la pantalla
+        start: "top 90%",
         onEnter: () => {
           gsap.to(buttonsRef.current, {
             y: 0,
@@ -66,7 +69,7 @@ export function HeroSection({ locale }: HeroSectionProps) {
             ease: "power3.out",
           })
         },
-        once: true, // Solo animar una vez
+        once: true,
       })
     }
 
@@ -92,16 +95,21 @@ export function HeroSection({ locale }: HeroSectionProps) {
   }
 
   return (
-    <section className="relative w-full h-screen overflow-hidden video-showcase hide-system-cursor">
-      {/* VIDEO BACKGROUND */}
+    <section className="relative w-full h-screen overflow-hidden video-showcase">
       <div className="absolute inset-0 overflow-hidden">
-        <iframe
-          src="https://player.vimeo.com/video/1136148208?h=b661ea2878&muted=1&loop=1&background=1"
-          className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto 
-                     -translate-x-1/2 -translate-y-1/2 scale-[1.2]"
-          frameBorder="0"
-          allow="autoplay; fullscreen; picture-in-picture"
-        />
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute top-1/2 left-1/2 w-full h-full object-cover -translate-x-1/2 -translate-y-1/2 scale-[1.05] md:scale-[1.2]"
+        >
+          <source
+            src="https://res.cloudinary.com/djldb5hqg/video/upload/v1766447444/YTDown.com_YouTube_Empieza-Tu-Aventura-en-Peru_Media_vgNus8s2tzs_002_720p_a5tzsg.mp4"
+            type="video/mp4"
+          />
+        </video>
       </div>
 
       {/* OVERLAY */}
@@ -110,21 +118,20 @@ export function HeroSection({ locale }: HeroSectionProps) {
       {/* CONTENT */}
       <div className="relative z-20 w-full h-full flex flex-col justify-between">
         <div className="flex-1 flex flex-col justify-end">
-          <div className="w-full px-8 sm:px-12 lg:px-16 pb-16 md:pb-20">
+          <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 pb-12 md:pb-16">
             <div className="max-w-2xl">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 md:mb-6 leading-tight">
                 {translations.title} <br /> {translations.titleLine2}
               </h1>
 
-              <p className="text-lg md:text-xl text-white/90 italic font-light max-w-md mb-8">
+              <p className="text-base sm:text-lg md:text-xl text-white/90 italic font-light max-w-md mb-6 md:mb-8">
                 {translations.description}
               </p>
             </div>
           </div>
         </div>
 
-        {/* FOOTER */}
-        <div className="w-full px-8 sm:px-12 lg:px-16 pb-16 md:pb-20 flex justify-between items-end">
+        <div className="w-full px-4 sm:px-8 md:px-12 lg:px-16 pb-8 md:pb-16 lg:pb-20 flex flex-col sm:flex-row justify-between items-center sm:items-end gap-4 sm:gap-0">
           {/* AUDIO BUTTON */}
           <button
             onClick={(e) => {
@@ -149,17 +156,16 @@ export function HeroSection({ locale }: HeroSectionProps) {
             )}
           </button>
 
-          {/* BUTTONS - Ocultos inicialmente, aparecen con scroll */}
-          <div ref={buttonsRef} className="flex gap-6 items-center">
+          <div ref={buttonsRef} className="flex flex-col sm:flex-row gap-3 sm:gap-6 items-center w-full sm:w-auto">
             <button
               onClick={(e) => e.stopPropagation()}
-              className="px-8 py-3 bg-black text-white font-semibold rounded-full hover:bg-black/80 transition-all"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-black text-white font-semibold rounded-full hover:bg-black/80 transition-all text-sm sm:text-base"
             >
               {translations.planVisit}
             </button>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="px-8 py-3 bg-transparent text-white font-semibold rounded-full hover:bg-white/10 transition-all border border-white"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-transparent text-white font-semibold rounded-full hover:bg-white/10 transition-all border border-white text-sm sm:text-base"
             >
               {translations.shopNow}
             </button>

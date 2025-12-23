@@ -1,4 +1,3 @@
-// src/app/[locale]/layout.tsx
 import type React from "react"
 import { Suspense } from "react"
 import { Toaster } from "sonner"
@@ -9,7 +8,6 @@ import "../globals.css"
 
 import { Poppins } from "next/font/google"
 
-// Fuente Poppins
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -17,9 +15,6 @@ const poppins = Poppins({
   display: "swap",
 })
 
-// -------------------------------------------------------
-// LAYOUT PRINCIPAL (NO ASYNC, RECIBE params COMO PROMISE)
-// -------------------------------------------------------
 export default function LocaleLayout({
   children,
   params,
@@ -27,16 +22,9 @@ export default function LocaleLayout({
   children: React.ReactNode
   params: Promise<{ locale: string }>
 }) {
-  return (
-    <LocaleLayoutContentWrapper params={params}>
-      {children}
-    </LocaleLayoutContentWrapper>
-  )
+  return <LocaleLayoutContentWrapper params={params}>{children}</LocaleLayoutContentWrapper>
 }
 
-// -------------------------------------------------------
-// COMPONENTE SERVER ASYNC (PERMITIDO)
-// -------------------------------------------------------
 async function LocaleLayoutContentWrapper({
   children,
   params,
@@ -45,8 +33,6 @@ async function LocaleLayoutContentWrapper({
   params: Promise<{ locale: string }>
 }) {
   const { locale: rawLocale } = await params
-
-  // Carga de diccionario + validación de locale
   const { locale, dictionary } = await loadLocaleData(rawLocale)
 
   return (

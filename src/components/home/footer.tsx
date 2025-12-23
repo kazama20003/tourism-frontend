@@ -2,14 +2,11 @@
 
 import { Instagram, Facebook, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import type { Locale } from "@/lib/i18n/config"
+import { useTranslation } from "@/lib/i18n/context"
 import { getFooterDictionary } from "@/lib/i18n/dictionaries/footer"
 
-interface FooterProps {
-  locale: Locale
-}
-
-export function Footer({ locale }: FooterProps) {
+export function Footer() {
+  const { locale } = useTranslation()
   const dict = getFooterDictionary(locale)
 
   return (

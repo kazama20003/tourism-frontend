@@ -17,7 +17,7 @@ export default async function HomePage({
   return (
     <main className="min-h-screen bg-background">
       <CustomCursor scrollToId="reservar">
-         <HeroSection locale={locale} />
+         <HeroSection/>
       </CustomCursor>
       <div id="reservar">
         <CustomCursor text="+TOURS" navigateTo="/tours">

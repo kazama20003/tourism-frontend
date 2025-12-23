@@ -64,6 +64,8 @@ const heroSectionDictionaries = {
   },
 }
 
-export function getHeroSectionDictionary(locale: string) {
+export type HeroSectionDictionary = (typeof heroSectionDictionaries)["es"]
+
+export function getHeroSectionDictionary(locale: string): HeroSectionDictionary {
   return heroSectionDictionaries[locale as keyof typeof heroSectionDictionaries] || heroSectionDictionaries.es
 }
