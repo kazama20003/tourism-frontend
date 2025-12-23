@@ -70,25 +70,26 @@ export default function BookingsPage() {
     canceled: 0,
     totalRevenue: 0,
   })
+useEffect(() => {
+  if (ordersData?.data) {
+    const orders = ordersData.data
 
-  useEffect(() => {
-    if (ordersData?.data) {
-      const orders = ordersData.data
-      const confirmedCount = orders.filter((o: Order) => o.status === OrderStatusEnum.CONFIRMED).length
-      const pendingCount = orders.filter((o: Order) => o.status === OrderStatusEnum.PENDING).length
-      const canceledCount = orders.filter((o: Order) => o.status === OrderStatusEnum.CANCELED).length
-      const revenueSum = orders.reduce((sum: number, o: Order) => sum + o.grandTotal, 0)
+    const confirmedCount = orders.filter((o: Order) => o.status === OrderStatusEnum.CONFIRMED).length
+    const pendingCount = orders.filter((o: Order) => o.status === OrderStatusEnum.PENDING).length
+    const canceledCount = orders.filter((o: Order) => o.status === OrderStatusEnum.CANCELED).length
 
-      setStats({
-        total: orders.length,
-        confirmed: confirmedCount,
-        pending: pendingCount,
-        canceled: canceledCount,
-        totalRevenue: revenueSum,
-      })
-      setCurrentPage(1)
-    }
-  }, [ordersData])
+    const revenueSum = orders.reduce((acc, o) => acc + (o.grandTotal ?? 0), 0)
+
+    setStats({
+      total: ordersData.total,
+      confirmed: confirmedCount,
+      pending: pendingCount,
+      canceled: canceledCount,
+      totalRevenue: revenueSum,
+    })
+  }
+}, [ordersData])
+
 
   const handleDeleteOrder = async (orderId: string) => {
     setSelectedOrderForDelete(orderId)
