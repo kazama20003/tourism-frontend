@@ -499,10 +499,12 @@ export default function ToursPage() {
         <div ref={ctaRef} className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-serif mb-6 text-background">{dict.cta.title}</h2>
           <p className="text-background/70 mb-8 max-w-xl mx-auto">{dict.cta.description}</p>
-          <button className="inline-flex items-center gap-3 px-10 py-5 bg-background text-foreground text-xs font-medium tracking-widest uppercase hover:bg-background/90 transition-colors">
+          <Link href="/about">
+            <button className="inline-flex items-center gap-3 px-10 py-5 bg-background text-foreground text-xs font-medium tracking-widest uppercase hover:bg-background/90 transition-colors">
             {dict.cta.button}
             <ArrowRight className="w-4 h-4" />
           </button>
+          </Link>
         </div>
       </section>
     </main>

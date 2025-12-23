@@ -817,7 +817,7 @@ export default function TourDetailPage() {
           <h2 className="text-3xl md:text-4xl font-serif mb-4">{dict.cta.title}</h2>
           <p className="text-background/80 mb-8 text-lg">{dict.cta.description}</p>
           <Link
-            href={`/${locale}/contact`}
+            href={`/${locale}/about`}
             className="inline-block px-8 py-4 bg-background text-foreground text-xs font-medium tracking-widest uppercase hover:bg-background/90 transition-colors"
           >
             {dict.cta.button}
