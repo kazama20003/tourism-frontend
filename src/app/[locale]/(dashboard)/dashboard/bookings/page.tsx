@@ -55,14 +55,14 @@ const ITEMS_PER_PAGE = 10
 
 export default function BookingsPage() {
   const router = useRouter()
-  const { data: ordersData, isLoading } = useOrders()
+  const [currentPage, setCurrentPage] = useState(1)
+  const { data: ordersData, isLoading } = useOrders(currentPage, ITEMS_PER_PAGE)
   const deleteOrderMutation = useDeleteOrder()
 
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [selectedOrderForDelete, setSelectedOrderForDelete] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
   const [stats, setStats] = useState({
     total: 0,
     confirmed: 0,
@@ -116,10 +116,10 @@ export default function BookingsPage() {
           (order.confirmationCode ?? "").toLowerCase().includes(searchQuery.toLowerCase())),
     ) || []
 
-  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE)
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
+  const totalPages = Math.ceil((ordersData?.total || 0) / ITEMS_PER_PAGE)
+  const startIndex = 0 // Data is already paginated from API
+  const endIndex = filteredOrders.length
+  const paginatedOrders = filteredOrders // No need to slice, API already handled pagination
 
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
@@ -391,8 +391,8 @@ export default function BookingsPage() {
                   {filteredOrders.length > 0 && (
                     <div className="flex items-center justify-between pt-4 border-t">
                       <div className="text-sm text-muted-foreground">
-                        Mostrando {startIndex + 1}-{Math.min(endIndex, filteredOrders.length)} de{" "}
-                        {filteredOrders.length} reservas
+                        Mostrando página {currentPage} de {totalPages} ({ordersData?.data?.length || 0} registros en
+                        esta página, {ordersData?.total || 0} total)
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -406,17 +406,23 @@ export default function BookingsPage() {
                           Anterior
                         </Button>
                         <div className="flex items-center gap-1">
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setCurrentPage(page)}
-                              className="h-8 w-8 p-0"
-                            >
-                              {page}
-                            </Button>
-                          ))}
+                          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                            const startPage = Math.max(1, currentPage - 2)
+                            const endPage = Math.min(totalPages, startPage + 4)
+                            return i + startPage <= endPage ? i + startPage : null
+                          })
+                            .filter(Boolean)
+                            .map((page) => (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page as number)}
+                                className="h-8 w-8 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ))}
                         </div>
                         <Button
                           variant="outline"
