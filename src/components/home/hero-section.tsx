@@ -118,7 +118,7 @@ export function HeroSection() {
           className="absolute top-1/2 left-1/2 w-full h-full object-cover -translate-x-1/2 -translate-y-1/2 scale-[1.05] md:scale-[1.2]"
         >
           <source
-            src="https://res.cloudinary.com/ddbzpbrje/video/upload/v1767044968/20104965-hd_1280_720_30fps_gwjdgp.mp4"
+            src="https://res.cloudinary.com/ddbzpbrje/video/upload/v1767046025/13772447_1920_1080_60fps_w44d8k.mp4"
             type="video/mp4"
           />
         </video>
