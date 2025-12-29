@@ -5,7 +5,7 @@ export const siteConfig = {
   name: "eTourism - Tourism & Transport Booking",
   description: "Book tours and transportation services worldwide. Find the best travel experiences.",
   url: process.env.NEXT_PUBLIC_APP_URL || "https://etourism.com",
-  ogImage: "https://res.cloudinary.com/ddbzpbrje/image/upload/v1766907724/ChatGPT_Image_28_dic_2025_02_41_45_kwivpk.png",
+  ogImage: "/og-image.png",
 }
 
 export const seoTranslations: Record<
@@ -174,4 +174,106 @@ export function generateLocaleSEO(locale: Locale, type: "home" | "tours" | "tran
   }
 
   return metadata
+}
+
+export function generateTourSEO(
+  locale: Locale,
+  tour: {
+    title: string
+    description: string
+    currentPrice: number
+  },
+  slug: string,
+): Metadata {
+  const baseUrl = siteConfig.url
+  const fullUrl = `${baseUrl}/${locale}/tours/${slug}`
+
+  const seoDescription = `${tour.description} Reserve desde $${tour.currentPrice} por persona.`
+
+  const alternateLanguages: Record<string, string | URL> = {}
+  const locales = ["es", "en", "fr", "it", "de", "pt", "zh", "ja", "ru"] as const
+  locales.forEach((lang) => {
+    alternateLanguages[lang] = `${baseUrl}/${lang}/tours/${slug}`
+  })
+
+  return {
+    title: `${tour.title} | Tours | eTourism`,
+    description: seoDescription,
+    keywords: [tour.title, "tour", "viaje", "reserva", "experiencia", "destino"],
+    alternates: {
+      languages: alternateLanguages,
+      canonical: fullUrl,
+    },
+    openGraph: {
+      title: `${tour.title} | Tours | eTourism`,
+      description: seoDescription,
+      url: fullUrl,
+      type: "website",
+      images: [
+        {
+          url: `${baseUrl}${siteConfig.ogImage}`,
+          width: 1200,
+          height: 630,
+          alt: tour.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${tour.title} | Tours | eTourism`,
+      description: seoDescription,
+      images: [`${baseUrl}${siteConfig.ogImage}`],
+    },
+  }
+}
+
+export function generateTransportSEO(
+  locale: Locale,
+  transport: {
+    title: string
+    description: string
+    currentPrice: number
+  },
+  slug: string,
+): Metadata {
+  const baseUrl = siteConfig.url
+  const fullUrl = `${baseUrl}/${locale}/transports/${slug}`
+
+  const seoDescription = `${transport.description} Reserva desde $${transport.currentPrice} por persona.`
+
+  const alternateLanguages: Record<string, string | URL> = {}
+  const locales = ["es", "en", "fr", "it", "de", "pt", "zh", "ja", "ru"] as const
+  locales.forEach((lang) => {
+    alternateLanguages[lang] = `${baseUrl}/${lang}/transports/${slug}`
+  })
+
+  return {
+    title: `${transport.title} | Transport | eTourism`,
+    description: seoDescription,
+    keywords: [transport.title, "transporte", "viaje", "reserva", "traslado"],
+    alternates: {
+      languages: alternateLanguages,
+      canonical: fullUrl,
+    },
+    openGraph: {
+      title: `${transport.title} | Transport | eTourism`,
+      description: seoDescription,
+      url: fullUrl,
+      type: "website",
+      images: [
+        {
+          url: `${baseUrl}${siteConfig.ogImage}`,
+          width: 1200,
+          height: 630,
+          alt: transport.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${transport.title} | Transport | eTourism`,
+      description: seoDescription,
+      images: [`${baseUrl}${siteConfig.ogImage}`],
+    },
+  }
 }
